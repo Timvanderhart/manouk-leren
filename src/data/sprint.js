@@ -1,0 +1,118 @@
+// Snelle herkenrondes: kies zo snel mogelijk de juiste categorie.
+window.SPRINT = [
+{id:"interpretatie",title:"Welke interpretatiemethode?",w:7,choices:["Grammaticaal","Wetshistorisch","Systematisch","Teleologisch"],items:[
+{t:"‘Volgens het woordenboek omvat “woning” ook een woonboot.’",a:"Grammaticaal"},
+{t:"‘Uit de parlementaire behandeling blijkt dat de minister alleen professionele handelaren bedoelde.’",a:"Wetshistorisch"},
+{t:"‘Dit artikel moet worden gelezen in samenhang met artikel 7 van dezelfde wet.’",a:"Systematisch"},
+{t:"‘De bepaling wil kwetsbare huurders beschermen; die bescherming moet ook gelden voor nieuwe vormen van verhuur.’",a:"Teleologisch"},
+{t:"‘Naar algemeen spraakgebruik is een tongzoen geen binnendringen van het lichaam.’",a:"Grammaticaal"},
+{t:"‘Een ander artikel uit het Wetboek van Strafrecht biedt voor dit gedrag een passender kader.’",a:"Systematisch"},
+{t:"‘De memorie van toelichting noemt alleen vervoer vanuit Nederland.’",a:"Wetshistorisch"},
+{t:"‘De begrippen moeten functioneel worden uitgelegd, aan de hand van de technologische ontwikkelingen.’",a:"Teleologisch"},
+{t:"‘De advocaat koppelt “wederrechtelijk” aan een rechtvaardigingsgrond en aan een zorgplicht uit een andere wet.’",a:"Systematisch"},
+{t:"‘Wat wilde de wetgever destijds met deze regel bereiken? Daarvoor kijken we naar de Handelingen.’",a:"Wetshistorisch"},
+{t:"‘Het woord “of” in deze zin kan alleen betekenen dat één van beide voorwaarden volstaat.’",a:"Grammaticaal"},
+{t:"‘Het doel van de regel is de verkeersveiligheid; dat doel wordt ook geraakt door e-steps.’",a:"Teleologisch"}
+]},
+{id:"rechters",title:"Welke grotverkenner-rechter?",w:2,choices:["Truepenny","Foster","Tatting","Keen","Handy"],items:[
+{t:"‘De wet is duidelijk, dus schuldig. Maar ik vraag het bestuur om strafvermindering.’",a:"Truepenny"},
+{t:"‘In de grot bevonden ze zich in een natuurtoestand; het gewone recht gold daar niet.’",a:"Foster"},
+{t:"‘Wanneer begon die natuurtoestand dan precies? Ik kom niet tot een oordeel.’",a:"Tatting"},
+{t:"‘Mijn persoonlijke gevoelens doen er als rechter niet toe. Gratie is aan het bestuur.’",a:"Keen"},
+{t:"‘90% van de bevolking wil vrijspraak. Recht moet aansluiten bij de werkelijkheid.’",a:"Handy"},
+{t:"‘Je kunt de letter van de wet schenden zonder het recht te schenden, kijk maar naar zelfverdediging.’",a:"Foster"},
+{t:"‘Tien reddingswerkers kwamen om. Dat maakt het des te moeilijker.’",a:"Tatting"},
+{t:"‘Abstracte juridische begrippen laten belangrijke omstandigheden uit beeld verdwijnen.’",a:"Handy"},
+{t:"‘Ik bekritiseer mijn collega die om gratie vraagt: dat is niet de taak van de rechter.’",a:"Keen"},
+{t:"‘Waarom zou een afspraak over het opofferen van een leven bindend zijn?’",a:"Tatting"}
+]},
+{id:"denkers",title:"Welke denker of stroming?",w:3,choices:["Hart","Radbruch","Dworkin","Holmes","Llewellyn","Natuurrecht"],items:[
+{t:"Recht bestaat uit primaire en secundaire regels.",a:"Hart"},
+{t:"Positief recht gaat voor, behalve bij onverdraaglijk onrecht.",a:"Radbruch"},
+{t:"Recht bestaat uit regels én beginselen; bij open normen is morele argumentatie nodig.",a:"Dworkin"},
+{t:"Recht is een voorspelling van wat rechters zullen beslissen.",a:"Holmes"},
+{t:"Grand style: precedenten serieus nemen, maar kijken naar doel en reden van de regel.",a:"Llewellyn"},
+{t:"Antigone beroept zich op goddelijke regels tegen de wet van de koning.",a:"Natuurrecht"},
+{t:"Open textuur: regels laten randgevallen open, de rechter heeft dan beoordelingsruimte.",a:"Hart"},
+{t:"De bad man wil alleen weten welke boete hij riskeert.",a:"Holmes"},
+{t:"Een wet mist haar rechtskarakter als de wetgever bewust het streven naar rechtvaardigheid loslaat.",a:"Radbruch"},
+{t:"Tijdelijke scheiding tussen recht en moraal: eerst beschrijven wat rechters doen, daarna beoordelen.",a:"Llewellyn"},
+{t:"Thomas van Aquino verbindt de geldigheid van wetten aan hogere morele principes.",a:"Natuurrecht"},
+{t:"Ook zonder duidelijke regel blijft de rechter gebonden aan rechtsbeginselen.",a:"Dworkin"},
+{t:"Geldigheid van een wet staat los van haar moraliteit; iets kan illegaal maar moreel juist zijn.",a:"Hart"}
+]},
+{id:"normen",title:"Welke soort norm?",w:1,choices:["Gedragsnorm","Sanctienorm","Gedrags- én sanctienorm","Bevoegdheidverlenend","Definitiebepaling","Schakelbepaling"],items:[
+{t:"‘De raad maakt de verordeningen die hij in het belang van de gemeente nodig oordeelt.’",a:"Bevoegdheidverlenend"},
+{t:"‘Wie opzettelijk geen belastingaangifte doet, wordt gestraft met gevangenisstraf van ten hoogste vier jaren.’",a:"Gedrags- én sanctienorm"},
+{t:"‘Onder bestuursorgaan wordt verstaan: ...’",a:"Definitiebepaling"},
+{t:"‘De bepalingen van deze titel zijn van overeenkomstige toepassing op ...’",a:"Schakelbepaling"},
+{t:"‘De huurder is verplicht zich als een goed huurder te gedragen.’",a:"Gedragsnorm"},
+{t:"‘Bij overtreding van artikel 5 is de overtreder een boete van €500 verschuldigd.’",a:"Sanctienorm"},
+{t:"‘De minister is bevoegd nadere regels te stellen.’",a:"Bevoegdheidverlenend"},
+{t:"‘Het is verboden in het park te barbecueën.’",a:"Gedragsnorm"},
+{t:"‘In deze wet wordt verstaan onder voertuig: ...’",a:"Definitiebepaling"}
+]},
+{id:"legaliteit",title:"Welk aspect van het legaliteitsbeginsel?",w:7,choices:["Lex scripta","Lex certa","Geen terugwerkende kracht","Analogieverbod","Formeel legaliteitsbeginsel"],items:[
+{t:"Een verordening stelt ‘zich hinderlijk gedragen’ strafbaar.",a:"Lex certa"},
+{t:"Iemand wordt gestraft op basis van een ongeschreven gewoonte.",a:"Lex scripta"},
+{t:"Een nieuwe strafbepaling wordt toegepast op gedrag van vóór de inwerkingtreding.",a:"Geen terugwerkende kracht"},
+{t:"De rechter rekent een gedraging die buiten de bepaling valt eronder, omdat het erop lijkt.",a:"Analogieverbod"},
+{t:"De politie doorzoekt een woning zonder dat de wet daarvoor een bevoegdheid geeft.",a:"Formeel legaliteitsbeginsel"},
+{t:"Een strafbepaling verbiedt ‘ongepast gedrag in de openbare ruimte’.",a:"Lex certa"},
+{t:"Een straf wordt achteraf verhoogd voor een feit dat al gepleegd was.",a:"Geen terugwerkende kracht"},
+{t:"Art. 1 Sv: strafvordering alleen op de wijze die de wet voorziet.",a:"Formeel legaliteitsbeginsel"}
+]},
+{id:"wiarda",title:"Welk type rechtsvinding (Wiarda)?",w:7,choices:["Heteronoom","Gematigd heteronoom","Autonoom"],items:[
+{t:"De rechter stelt vast dat de beroepstermijn van zes weken is verstreken.",a:"Heteronoom"},
+{t:"De rechter vult in een concrete zaak de wettelijke open norm ‘goed werkgeverschap’ in.",a:"Gematigd heteronoom"},
+{t:"De rechter bepaalt via uitleg of een NFT een ‘goed’ is in de zin van art. 310 Sr.",a:"Gematigd heteronoom"},
+{t:"Er is geen enkele regel of norm die houvast biedt; de rechter formuleert op eigen gezag een nieuwe regel.",a:"Autonoom"},
+{t:"De rechter als ‘spreekbuis van de wet’ (Montesquieu).",a:"Heteronoom"},
+{t:"De rechter als ‘vertolker van de wet’; meer dan een mechanische toepasser (Boogaard & Uzman).",a:"Gematigd heteronoom"},
+{t:"De rechter interpreteert een rechtsregel om de precieze reikwijdte vast te stellen.",a:"Gematigd heteronoom"}
+]},
+{id:"rechtsstaat",title:"Vrijheid, gelijkheid en neutraliteit",w:8,items:[
+{t:"De overheid laat burgers zo veel mogelijk met rust.",c:["Negatieve vrijheid","Positieve vrijheid"],a:"Negatieve vrijheid"},
+{t:"De overheid zorgt dat iedereen daadwerkelijk kan studeren, bijv. met een beurs.",c:["Negatieve vrijheid","Positieve vrijheid"],a:"Positieve vrijheid"},
+{t:"Gelijke gevallen worden gelijk behandeld; iedereen heeft dezelfde rechten.",c:["Formele gelijkheid","Materiële gelijkheid"],a:"Formele gelijkheid"},
+{t:"Er wordt gecompenseerd voor een achterstand in de uitgangspositie.",c:["Formele gelijkheid","Materiële gelijkheid"],a:"Materiële gelijkheid"},
+{t:"Gelijkheid = iedere stem telt even zwaar.",c:["Formele democratie","Materiële democratie"],a:"Formele democratie"},
+{t:"Gelijkheid = gelijkwaardigheid: gelijke zorg en respect voor iedereen.",c:["Formele democratie","Materiële democratie"],a:"Materiële democratie"},
+{t:"Ook de meerderheid moet grondrechten van minderheden respecteren.",c:["Formele democratie","Materiële democratie"],a:"Materiële democratie"},
+{t:"Geen enkele ambtenaar mag een zichtbaar religieus symbool dragen.",c:["Exclusieve neutraliteit","Inclusieve neutraliteit","Compenserende neutraliteit"],a:"Exclusieve neutraliteit"},
+{t:"Alle overtuigingen mogen zichtbaar zijn in het publieke leven en worden gelijkwaardig behandeld.",c:["Exclusieve neutraliteit","Inclusieve neutraliteit","Compenserende neutraliteit"],a:"Inclusieve neutraliteit"},
+{t:"Een religieuze minderheid krijgt extra subsidie om een achterstand in te halen.",c:["Exclusieve neutraliteit","Inclusieve neutraliteit","Compenserende neutraliteit"],a:"Compenserende neutraliteit"},
+{t:"Het recht op huisvesting en onderwijs.",c:["Klassiek grondrecht","Politiek grondrecht","Sociaal grondrecht"],a:"Sociaal grondrecht"},
+{t:"Het kiesrecht.",c:["Klassiek grondrecht","Politiek grondrecht","Sociaal grondrecht"],a:"Politiek grondrecht"},
+{t:"De machten controleren en begrenzen elkaar.",c:["Machtenscheiding","Machtenspreiding"],a:"Machtenspreiding"},
+{t:"De machten bemoeien zich strikt niet met elkaars taken.",c:["Machtenscheiding","Machtenspreiding"],a:"Machtenscheiding"}
+]},
+{id:"begrippen",title:"Begrippenparen",w:1,items:[
+{t:"Het huidige wettelijke minimumloon.",c:["Positief recht","Wenselijk recht"],a:"Positief recht"},
+{t:"Jouw eigendomsrecht op je fiets.",c:["Objectief recht","Subjectief recht"],a:"Subjectief recht"},
+{t:"De gemeente koopt laptops bij een winkel.",c:["Publiekrecht","Privaatrecht"],a:"Privaatrecht"},
+{t:"Regels over het verloop van een strafproces.",c:["Materieel recht","Formeel recht"],a:"Formeel recht"},
+{t:"Partijen mogen er niet van afwijken.",c:["Dwingend recht","Aanvullend recht"],a:"Dwingend recht"},
+{t:"Geldt alleen als partijen zelf niets anders hebben afgesproken.",c:["Dwingend recht","Aanvullend recht"],a:"Aanvullend recht"},
+{t:"Vastgesteld door regering en Staten-Generaal samen.",c:["Wet in formele zin","Wet in materiële zin"],a:"Wet in formele zin"},
+{t:"Algemeen verbindend voorschrift met externe werking.",c:["Wet in formele zin","Wet in materiële zin"],a:"Wet in materiële zin"},
+{t:"Een nieuwe bevoegdheid wordt gecreëerd en toegekend.",c:["Attributie","Delegatie"],a:"Attributie"},
+{t:"Een bestaande bevoegdheid wordt overgedragen.",c:["Attributie","Delegatie"],a:"Delegatie"},
+{t:"Elektriciteit is een ‘goed’ (1921).",c:["Extensieve uitleg","Analogie"],a:"Extensieve uitleg"},
+{t:"Een bestendige gedragspraktijk.",c:["Usus","Opinio iuris"],a:"Usus"},
+{t:"De overtuiging dat iets juridisch zo hoort.",c:["Usus","Opinio iuris"],a:"Opinio iuris"},
+{t:"Gaat over wat er precies is gebeurd.",c:["Regelscepsis","Feitenscepsis"],a:"Feitenscepsis"}
+]},
+{id:"rechtsgang",title:"Partijen en uitspraken",w:5,items:[
+{t:"Uitspraak van de rechtbank in een dagvaardingsprocedure.",c:["Vonnis","Arrest","Beschikking"],a:"Vonnis"},
+{t:"Uitspraak in een verzoekschriftprocedure.",c:["Vonnis","Arrest","Beschikking"],a:"Beschikking"},
+{t:"Uitspraak van het gerechtshof in hoger beroep (dagvaarding).",c:["Vonnis","Arrest","Beschikking"],a:"Arrest"},
+{t:"Wie stelt hoger beroep in?",c:["Appellant","Geïntimeerde","Gedaagde"],a:"Appellant"},
+{t:"De wederpartij in hoger beroep.",c:["Appellant","Geïntimeerde","Eiser"],a:"Geïntimeerde"},
+{t:"Juridische klacht tegen de bestreden uitspraak.",c:["Cassatiemiddel","Dictum","Annotatie"],a:"Cassatiemiddel"},
+{t:"De uiteindelijke beslissing van de rechter.",c:["Cassatiemiddel","Dictum","Conclusie A-G"],a:"Dictum"},
+{t:"Commentaar van een deskundige bij de uitspraak.",c:["Annotatie","Conclusie A-G","Rechtsoverwegingen"],a:"Annotatie"},
+{t:"Advies aan de Hoge Raad, waaraan de HR niet gebonden is.",c:["Annotatie","Conclusie A-G","Dictum"],a:"Conclusie A-G"},
+{t:"Geldvordering van €12.000.",c:["Kantonrechter","Gerechtshof","Hoge Raad"],a:"Kantonrechter"}
+]}
+];
