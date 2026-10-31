@@ -145,7 +145,7 @@ function viewStart(){
 
     <div class="callout" role="note">
       <b>Let op: Wiarda</b>
-      <p>Een open norm uit de wet invullen (zoals goed werkgeverschap) is volgens het antwoordmodel <b style="color:inherit">gematigd heteronoom</b>, niet autonoom. Je samenvatting zegt hier iets anders. <a href="#leerpunten">Meer leerpunten uit je oefentoets</a></p>
+      <p>Een open norm uit de wet invullen waar de wet genoeg houvast geeft (zoals goed werkgeverschap) is volgens het antwoordmodel <b style="color:inherit">gematigd heteronoom</b>, niet autonoom. Je samenvatting zegt hier iets anders. <a href="#leerpunten">Meer leerpunten uit je oefentoets</a></p>
     </div>
 
     <section class="stack">

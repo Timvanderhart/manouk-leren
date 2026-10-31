@@ -5,12 +5,12 @@ window.SPRINT = [
 {t:"‘Uit de parlementaire behandeling blijkt dat de minister alleen professionele handelaren bedoelde.’",a:"Wetshistorisch"},
 {t:"‘Dit artikel moet worden gelezen in samenhang met artikel 7 van dezelfde wet.’",a:"Systematisch"},
 {t:"‘De bepaling wil kwetsbare huurders beschermen; die bescherming moet ook gelden voor nieuwe vormen van verhuur.’",a:"Teleologisch"},
-{t:"‘Naar algemeen spraakgebruik is een tongzoen geen binnendringen van het lichaam.’",a:"Grammaticaal"},
+{t:"‘Naar algemeen spraakgebruik is een gedwongen tongzoen geen verkrachting.’",a:"Grammaticaal"},
 {t:"‘Een ander artikel uit het Wetboek van Strafrecht biedt voor dit gedrag een passender kader.’",a:"Systematisch"},
 {t:"‘De memorie van toelichting noemt alleen vervoer vanuit Nederland.’",a:"Wetshistorisch"},
 {t:"‘De begrippen moeten functioneel worden uitgelegd, aan de hand van de technologische ontwikkelingen.’",a:"Teleologisch"},
 {t:"‘De advocaat koppelt “wederrechtelijk” aan een rechtvaardigingsgrond en aan een zorgplicht uit een andere wet.’",a:"Systematisch"},
-{t:"‘Wat wilde de wetgever destijds met deze regel bereiken? Daarvoor kijken we naar de Handelingen.’",a:"Wetshistorisch"},
+{t:"‘Wat bedoelde de wetgever destijds met deze regel? Daarvoor kijken we naar de Handelingen.’",a:"Wetshistorisch"},
 {t:"‘Het woord “of” in deze zin kan alleen betekenen dat één van beide voorwaarden volstaat.’",a:"Grammaticaal"},
 {t:"‘Het doel van de regel is de verkeersveiligheid; dat doel wordt ook geraakt door e-steps.’",a:"Teleologisch"}
 ]},
@@ -66,7 +66,7 @@ window.SPRINT = [
 {t:"De rechter stelt vast dat de beroepstermijn van zes weken is verstreken.",a:"Heteronoom"},
 {t:"De rechter vult in een concrete zaak de wettelijke open norm ‘goed werkgeverschap’ in.",a:"Gematigd heteronoom"},
 {t:"De rechter bepaalt via uitleg of een NFT een ‘goed’ is in de zin van art. 310 Sr.",a:"Gematigd heteronoom"},
-{t:"Er is geen enkele regel of norm die houvast biedt; de rechter formuleert op eigen gezag een nieuwe regel.",a:"Autonoom"},
+{t:"Het bestaande recht biedt weinig concrete houvast; de rechter moet grotendeels zelf afwegen en vormt nieuw recht.",a:"Autonoom"},
 {t:"De rechter als ‘spreekbuis van de wet’ (Montesquieu).",a:"Heteronoom"},
 {t:"De rechter als ‘vertolker van de wet’; meer dan een mechanische toepasser (Boogaard & Uzman).",a:"Gematigd heteronoom"},
 {t:"De rechter interpreteert een rechtsregel om de precieze reikwijdte vast te stellen.",a:"Gematigd heteronoom"}
