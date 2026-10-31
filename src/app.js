@@ -8,6 +8,17 @@ const hashStr = s => { let h = 7; for (const ch of s) h = (Math.imul(h, 31) + ch
 const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const DAY = 864e5;
 const LETTERS = ["A","B","C","D","E","F"];
+const PRAISE = ["Goed zo!","Helemaal goed.","Klopt!","Precies, Manouk.","Netjes!","Mooi, goed gezien.","Top, die zit erin.","Ja, dat is hem!","Goed gedaan!"];
+const STREAK = {3:"Drie goed op rij!",5:"Vijf op rij, lekker bezig Manouk!",10:"Tien op rij! Jij bent er klaar voor.",15:"Vijftien op rij. Echt heel sterk!"};
+const NOPE = ["Niet goed. Lees even waarom.","Helaas, deze niet. Kijk naar de uitleg.","Niet goed, maar nu weet je het wel."];
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const heart = '<svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 3 4.5 6.7 4.5c2.1 0 3.6 1.2 5.3 3.1 1.7-1.9 3.2-3.1 5.3-3.1 3.7 0 5.8 3.9 4.3 7.3C19.5 16.4 12 21 12 21z"/></svg>';
+let toastT = null;
+function toast(msg){
+  let t = document.getElementById("toast");
+  if (!t) { t = document.createElement("div"); t.id = "toast"; t.className = "toast"; t.setAttribute("role","status"); t.setAttribute("aria-live","polite"); document.body.appendChild(t); }
+  t.innerHTML = msg; t.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 1800);
+}
 
 // ---------- data prep ----------
 FLASH.forEach(c => c.id = "f" + hashStr(c.q));
@@ -178,7 +189,7 @@ function buildCardQueue(){
   } else if (cardFilter.mode === "moeilijk") {
     q = shuffle(pool.filter(c => cardState(c) && cardState(c).box <= 1));
   } else q = shuffle(pool);
-  cardSess = {queue:q, i:0, flipped:false, tally:{1:0,2:0,3:0}, requeued:{}};
+  cardSess = {queue:q, i:0, flipped:false, tally:{1:0,2:0,3:0}, requeued:{}, streak:0};
 }
 function viewCards(){
   if (!cardSess) buildCardQueue();
@@ -197,7 +208,7 @@ function viewCards(){
   if (!c) {
     const t = s.tally;
     return `<div class="wrap">${head}<div class="panel end">
-      <p class="eyebrow">Ronde klaar</p><p class="big">Goed gedaan, Manouk.</p>
+      <p class="eyebrow">Ronde klaar</p><p class="big">${t[3] >= (t[1] + t[2] + t[3]) * .8 ? "Wauw, bijna alles wist je!" : "Goed gedaan, Manouk."}</p>
       <p class="muted">${t[3]} wist je, ${t[2]} twijfel, ${t[1]} nog niet. Kaarten die je niet wist komen morgen weer langs.</p>
       <div class="row"><button class="btn btn-primary" data-again>Nog een ronde</button><a class="btn btn-ghost" href="#oefenen">Naar oefenvragen</a></div>
     </div></div>`;
@@ -227,7 +238,10 @@ function rateCard(r){
   else if (r === 2) { st.box = Math.max(1, st.box); st.due = now + DAY; }
   else { st.box = Math.min(5, st.box + 1); st.due = now + INT[st.box] * DAY; }
   st.n = (st.n || 0) + 1; S.cards[c.id] = st; save();
-  s.tally[r]++; s.i++; s.flipped = false; render();
+  s.tally[r]++; s.i++; s.flipped = false;
+  if (r === 3) { s.streak++; if (STREAK[s.streak]) toast(`<span class="h">${heart}</span> ${STREAK[s.streak]}`); else if (Math.random() < .45) toast(pick(PRAISE)); }
+  else s.streak = 0;
+  render();
   const fc = $("#fc"); if (fc) fc.focus({preventScroll:true});
 }
 function bindCards(){
@@ -252,7 +266,7 @@ function questionHTML(item, chosen, reveal){
   const stel = q.st ? `<div class="stel"><p><b>STELLING 1</b><span>${fmt(q.s1)}</span></p><p><b>STELLING 2</b><span>${fmt(q.s2)}</span></p></div><p class="q-text">Welke bewering is juist?</p>` : "";
   const opts = item.order.map((oi, pos) => {
     let cls = "";
-    if (reveal) { if (oi === q.a) cls = "ok"; else if (oi === chosen) cls = "no"; }
+    if (reveal) { if (oi === q.a) cls = "ok" + (chosen === q.a ? " pop" : ""); else if (oi === chosen) cls = "no"; }
     else if (oi === chosen) cls = "sel";
     return `<li><button class="opt ${cls}" data-opt="${oi}" ${reveal ? "disabled" : ""}><span class="l">${LETTERS[pos]}</span><span>${fmt(q.o[oi])}</span></button></li>`;
   }).join("");
@@ -270,7 +284,7 @@ let prac = null;
 function buildPrac(){
   let pool = weekMc(pracFilter.w);
   if (pracFilter.wrong) pool = pool.filter(q => S.mc[q.id] && !S.mc[q.id].last);
-  prac = {queue: shuffle(pool).map(prepQuestion), i:0, chosen:null, ok:0, bad:0};
+  prac = {queue: shuffle(pool).map(prepQuestion), i:0, chosen:null, ok:0, bad:0, streak:0, msg:""};
 }
 function viewPractice(){
   if (!prac) buildPrac();
@@ -285,23 +299,25 @@ function viewPractice(){
   const item = prac.queue[prac.i];
   if (!item) {
     const tot = prac.ok + prac.bad;
-    return `<div class="wrap">${head}<div class="panel end"><p class="eyebrow">Klaar</p><p class="big tnum">${prac.ok} van ${tot} goed</p>
+    return `<div class="wrap">${head}<div class="panel end"><p class="eyebrow">Klaar</p><p class="big tnum">${prac.ok} van ${tot} goed</p>${tot && prac.ok / tot >= .8 ? `<p class="praise">Sterk, Manouk! Dit gaat echt de goede kant op.</p>` : ""}
       <p class="muted">Vragen die je fout had vind je terug onder ‘Mijn fouten’.</p>
       <div class="row"><button class="btn btn-primary" data-pagain>Opnieuw</button>${wrongN ? `<button class="btn btn-ghost" data-pfout>Oefen mijn fouten</button>` : ""}</div></div></div>`;
   }
   const reveal = prac.chosen !== null;
   const right = reveal && prac.chosen === item.q.a;
   return `<div class="wrap">${head}
-    <div class="scoreline tnum"><span>Vraag <b>${prac.i + 1}</b> van ${prac.queue.length}</span><span>Goed <b>${prac.ok}</b></span><span>Fout <b>${prac.bad}</b></span></div>
+    <div class="scoreline tnum"><span>Vraag <b>${prac.i + 1}</b> van ${prac.queue.length}</span><span>Goed <b>${prac.ok}</b></span><span>Fout <b>${prac.bad}</b></span>${prac.streak >= 3 ? `<span class="streak">${heart} ${prac.streak} op rij</span>` : ""}</div>
     <div class="panel stack">${questionHTML(item, prac.chosen, reveal)}
-      ${reveal ? `<div class="explain"><span class="verdict ${right ? "good" : "bad"}">${right ? "Goed!" : "Niet goed."}</span><p>${fmt(item.q.e)}</p></div>
+      ${reveal ? `<div class="explain"><span class="verdict ${right ? "good" : "bad"}">${esc(prac.msg)}</span><p>${fmt(item.q.e)}</p></div>
       <div class="row"><button class="btn btn-primary" id="pnext">Volgende vraag</button><span class="small muted">of druk op <kbd>Enter</kbd></span></div>`
       : `<p class="small muted">Tip: kies met <kbd>A</kbd> t/m <kbd>D</kbd></p>`}
     </div></div>`;
 }
 function choosePrac(oi){
   if (!prac || prac.chosen !== null) return; const item = prac.queue[prac.i]; if (!item) return;
-  prac.chosen = oi; const ok = oi === item.q.a; if (ok) prac.ok++; else prac.bad++; recordMc(item.q, ok); render();
+  prac.chosen = oi; const ok = oi === item.q.a; if (ok) prac.ok++; else prac.bad++; recordMc(item.q, ok);
+  if (ok) { prac.streak++; prac.msg = STREAK[prac.streak] || pick(PRAISE); } else { prac.streak = 0; prac.msg = pick(NOPE); }
+  render();
 }
 function nextPrac(){ if (!prac || prac.chosen === null) return; prac.i++; prac.chosen = null; render(); window.scrollTo({top:0}); }
 function bindPractice(){
@@ -368,7 +384,7 @@ function examResult(head){
     <div class="panel stack">
       <p class="eyebrow">Uitslag</p>
       <div class="result-big"><span class="n tnum">${r.score}/${r.total}</span><span class="grade tnum">indicatie ${r.grade.toFixed(1).replace(".",",")}</span></div>
-      <p class="muted">Tijd: ${fmtTime(r.ms)}. ${r.score >= 18 ? "Dat is voldoende voor het meerkeuzedeel." : "Kijk hieronder welke weken nog aandacht nodig hebben."}</p>
+      <p class="${r.score >= 18 ? "praise" : ""}">${examPraise(r.score, r.total)}</p><p class="muted small">Tijd: ${fmtTime(r.ms)}.</p>
       <div class="weeks">${Object.keys(byW).sort((a,b)=>a-b).map(w => { const b = byW[w], p = Math.round(100 * b.ok / b.n); return `<div class="wk" style="grid-template-columns:4.2rem minmax(0,1fr) 5rem"><span class="nm">WEEK ${w}</span><span class="bar ${p >= 60 ? "good" : ""}"><i style="width:${p}%"></i></span><span class="small tnum">${b.ok}/${b.n} goed</span></div>`; }).join("")}</div>
       <div class="row"><button class="btn btn-primary" id="eRestart">Nieuw proeftentamen</button><a class="btn btn-ghost" href="#oefenen" data-to-fout>Oefen mijn fouten</a></div>
     </div>
@@ -378,6 +394,14 @@ function examResult(head){
         <div class="body">${ok ? "" : `<p><b class="verdict bad">Jouw antwoord:</b> ${esc(yours)}</p>`}<p><b class="verdict good">Juist:</b> ${esc(it.q.o[it.q.a])}</p><p class="muted">${fmt(it.q.e)}</p></div></details>`; }).join("")}
     </div></section>
   </div>`;
+}
+function examPraise(sc, tot){
+  const p = sc / tot;
+  if (p >= .9) return "Wauw, Manouk! Dit is bijna foutloos.";
+  if (p >= .8) return "Heel sterk. Dit zit er echt goed in.";
+  if (p >= .6) return "Voldoende, mooi zo! Hieronder zie je waar nog punten liggen.";
+  if (p >= .4) return "Je bent goed op weg. Oefen de weken met de kortste balken nog even.";
+  return "Dit is een begin. Start met de flashcards van de weken hieronder.";
 }
 function handIn(){
   let score = 0;
@@ -447,12 +471,12 @@ function viewOpen(){
         ${rev ? `<div class="stack" style="gap:.7rem">
             <p class="model-h">Beoordelingscriteria: vink aan wat in jouw antwoord staat</p>
             <ul class="crit">${p.c.map((c, i) => `<li><label><input type="checkbox" data-crit="${p.l}:${i}" ${ch[i] ? "checked" : ""}><span>${esc(c.t)}</span><span class="pt">+${c.p} pt</span></label></li>`).join("")}</ul>
-            <p class="small tnum"><b>${got}/${p.p} punten</b></p>
+            <p class="small tnum"><b>${got}/${p.p} punten</b>${got === p.p ? ` <span class="praise">Alle punten binnen!</span>` : ""}</p>
             <p class="model-h">Modelantwoord</p><div class="model">${esc(p.m)}</div>
           </div>` : `<div><button class="btn btn-ghost" data-reveal="${p.l}">Bekijk antwoordmodel</button></div>`}
       </section>`;
     }).join("")}
-    <div class="total"><span>Totaal voor deze casus</span><b class="tnum">${sc === null ? "0" : String(sc).replace(".",",")}/15</b></div>
+    <div class="total"><span>${sc === 15 ? "Volle score, Manouk. Top!" : "Totaal voor deze casus"}</span><b class="tnum">${sc === null ? "0" : String(sc).replace(".",",")}/15</b></div>
     <div class="row"><button class="btn btn-ghost" id="oReset">Wis mijn antwoorden</button>${openResetAsk ? `<span class="small">Zeker weten? <button class="btn-link" id="oResetYes">Ja, wissen</button> · <button class="btn-link" id="oResetNo">Nee</button></span>` : ""}</div>
   </div>`;
 }
@@ -487,7 +511,7 @@ function viewSprint(){
   const set = sp.set, it = sp.items[sp.i];
   if (!it) {
     const best = S.sprint[set.id];
-    return `<div class="wrap"><div class="panel end"><p class="eyebrow">${esc(set.title)}</p><p class="big tnum">${sp.ok} van ${sp.items.length} goed</p>
+    return `<div class="wrap"><div class="panel end"><p class="eyebrow">${esc(set.title)}</p><p class="big tnum">${sp.ok} van ${sp.items.length} goed</p>${sp.ok === sp.items.length ? `<p class="praise">Alles goed! Mooi gedaan, Manouk.</p>` : ""}
       <p class="muted tnum">In ${Math.round(sp.ms / 1000)} seconden.${best && best.ok === sp.ok && best.ms === sp.ms ? " Nieuw record!" : ""}</p>
       ${sp.miss.length ? `<div class="stack" style="gap:.4rem;width:100%"><p class="small"><b>Nog even bekijken:</b></p><ul class="plain small">${sp.miss.map(m => `<li>${esc(m.t)} <b>→ ${esc(m.a)}</b></li>`).join("")}</ul></div>` : ""}
       <div class="row"><button class="btn btn-primary" id="spAgain">Nog een keer</button><button class="btn btn-ghost" id="spBack">Andere ronde</button></div></div></div>`;
@@ -495,7 +519,7 @@ function viewSprint(){
   const choices = it.c || set.choices;
   const pct = Math.round(100 * sp.i / sp.items.length);
   return `<div class="wrap">
-    <div class="row between"><button class="btn-link small" id="spBack">Stoppen</button><span class="small muted tnum">${sp.i + 1} / ${sp.items.length} · ${sp.ok} goed</span></div>
+    <div class="row between"><button class="btn-link small" id="spBack">Stoppen</button><span class="small muted tnum">${sp.streak >= 3 ? `<span class="streak">${heart} ${sp.streak} op rij</span> · ` : ""}${sp.i + 1} / ${sp.items.length} · ${sp.ok} goed</span></div>
     <div class="bar"><i style="width:${pct}%"></i></div>
     <div class="panel stack" style="gap:1.4rem">
       <p class="eyebrow">${esc(set.title)}</p>
@@ -505,12 +529,12 @@ function viewSprint(){
 }
 function pickSprint(c){
   if (!sp || sp.picked !== null) return; const it = sp.items[sp.i]; sp.picked = c;
-  if (c === it.a) sp.ok++; else sp.miss.push(it);
+  if (c === it.a) { sp.ok++; sp.streak++; if (STREAK[sp.streak]) toast(`<span class="h">${heart}</span> ${STREAK[sp.streak]}`); } else { sp.miss.push(it); sp.streak = 0; }
   render();
   clearTimeout(spTimer); spTimer = setTimeout(() => { if (!sp) return; sp.i++; sp.picked = null; if (sp.i >= sp.items.length) finishSprint(); render(); }, c === it.a ? 650 : 1500);
 }
 function finishSprint(){ sp.ms = Date.now() - sp.start; const b = S.sprint[sp.set.id]; if (!b || sp.ok > b.ok || (sp.ok === b.ok && sp.ms < b.ms)) { S.sprint[sp.set.id] = {ok: sp.ok, ms: sp.ms}; save(); } }
-function startSprint(id){ const set = SPRINT.find(s => s.id === id); sp = {set, items: shuffle(set.items), i:0, ok:0, picked:null, start: Date.now(), miss:[]}; render(); }
+function startSprint(id){ const set = SPRINT.find(s => s.id === id); sp = {set, items: shuffle(set.items), i:0, ok:0, picked:null, start: Date.now(), miss:[], streak:0}; render(); }
 function bindSprint(){
   $$("[data-sp]").forEach(b => b.addEventListener("click", () => startSprint(b.dataset.sp)));
   $$("[data-ch]").forEach(b => b.addEventListener("click", () => pickSprint(b.dataset.ch)));

@@ -7,8 +7,7 @@ SRC = ROOT / "src"
 TITLE = "Manouks GVR-trainer"
 FONTS = ('<link rel="preconnect" href="https://fonts.googleapis.com">'
          '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
-         '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400'
-         '&family=IBM+Plex+Mono:wght@400;500&family=Young+Serif&display=swap">')
+         '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap">')
 
 css = (SRC / "styles.css").read_text(encoding="utf-8")
 body = (SRC / "body.html").read_text(encoding="utf-8")
