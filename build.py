@@ -1,28 +1,33 @@
 #!/usr/bin/env python3
-"""Bouwt twee versies: een fragment voor de Claude-artifact en een volledige index.html voor hosting."""
+"""Bouwt de studietrainer: een fragment voor de Claude-artifact en een volledige index.html voor GitHub Pages."""
 from pathlib import Path
 
 ROOT = Path(__file__).parent
 SRC = ROOT / "src"
-TITLE = "Manouks GVR-trainer"
+COURSES = ["gvr", "isbr"]  # volgorde op het hoofdscherm
+TITLE = "Manouks studietrainer"
 FONTS = ('<link rel="preconnect" href="https://fonts.googleapis.com">'
          '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
          '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,400&display=swap">')
 
 css = (SRC / "styles.css").read_text(encoding="utf-8")
 body = (SRC / "body.html").read_text(encoding="utf-8")
-data = "\n".join((SRC / "data" / f).read_text(encoding="utf-8") for f in ["meta.js", "flashcards.js", "mc.js", "open.js", "sprint.js"])
 app = (SRC / "app.js").read_text(encoding="utf-8")
+
+parts = ["window.COURSE_DATA = {};"]
+for cid in COURSES:
+    files = "\n".join((SRC / "courses" / cid / f).read_text(encoding="utf-8")
+                      for f in ["meta.js", "flashcards.js", "mc.js", "open.js", "sprint.js"])
+    parts.append(f"(function(){{ var window = {{}};\n{files}\nCOURSE_DATA.{cid} = window; }})();")
+data = "\n".join(parts)
 
 inner = f"{body}\n<script>\n{data}\n</script>\n<script>\n{app}\n</script>\n"
 
-# 1. Artifact-fragment (skeleton wordt bij publiceren toegevoegd)
 frag = (f'<title>{TITLE}</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n'
         f'{FONTS}\n<style>\n{css}\n</style>\n{inner}')
 (ROOT / "dist" / "artifact").mkdir(parents=True, exist_ok=True)
 (ROOT / "dist" / "artifact" / "manouk-gvr.html").write_text(frag, encoding="utf-8")
 
-# 2. Losse website
 site_reset = (":root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}"
               "img{max-width:100%}[hidden]{display:none!important}")
 full = (f'<!doctype html>\n<html lang="nl">\n<head>\n<meta charset="utf-8">\n'

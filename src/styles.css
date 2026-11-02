@@ -267,3 +267,29 @@ ul.plain{margin:0;padding-left:1.1rem;display:flex;flex-direction:column;gap:.35
 @keyframes pop{0%{transform:scale(1)}45%{transform:scale(1.025)}100%{transform:scale(1)}}
 .streak{display:inline-flex;align-items:center;gap:.35rem;font-weight:700;color:var(--rose-deep);font-size:.9rem}
 .praise{font-weight:700;color:var(--good)}
+
+/* ---------- meerdere vakken ---------- */
+/* ISBR krijgt een iets paarsere roze tint, zodat je altijd ziet in welk vak je zit */
+[data-course="isbr"]{--rose:#a63f86;--rose-deep:#7d2a65;--rose-soft:#f0d2e7}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) [data-course="isbr"]{--rose:#e48bcd;--rose-deep:#f4b6e3;--rose-soft:#47243f} }
+:root[data-theme="dark"] [data-course="isbr"]{--rose:#e48bcd;--rose-deep:#f4b6e3;--rose-soft:#47243f}
+.mark.txt{font-family:var(--f-label);font-weight:800;font-size:.7rem;letter-spacing:.03em}
+.brand small{max-width:11rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav a.nav-back{color:var(--muted);font-size:.88rem;margin-bottom:.4rem;border-bottom:1px solid var(--line);border-radius:var(--r-sm) var(--r-sm) 0 0}
+.nav a[data-course] svg{color:var(--rose)}
+.courses{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}
+@media (max-width:700px){.courses{grid-template-columns:minmax(0,1fr)}}
+.course{display:flex;flex-direction:column;gap:1rem;padding:1.4rem;border-radius:20px;border:1px solid var(--line);background:var(--surface);box-shadow:var(--shadow);text-decoration:none;color:var(--ink);transition:border-color .15s,transform .15s;position:relative;overflow:hidden}
+.course::before{content:"";position:absolute;inset:0 0 auto;height:5px;background:var(--rose)}
+.course:hover{border-color:var(--rose);transform:translateY(-2px)}
+.course-top{display:flex;align-items:center;gap:.7rem}
+.course .mark{width:3rem;height:3rem}
+.course h2{font-size:1.35rem}
+.course-stats{display:flex;flex-direction:column;gap:.6rem}
+.course-stats .st{display:flex;flex-direction:column;gap:.3rem;font-size:.82rem;color:var(--muted)}
+.course-meta{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:.25rem;color:var(--muted)}
+.course-meta li::before{content:"•";color:var(--rose);margin-right:.45rem}
+.course .btn{align-self:flex-start;margin-top:auto}
+@media (max-width:860px){ .nav a.nav-back{border-bottom:1px solid var(--line);border-radius:var(--r-sm);margin-bottom:0} .brand small{max-width:9rem} }
+
+.ocard .tag,.lesson .tag{align-self:flex-start}

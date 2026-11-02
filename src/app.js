@@ -19,30 +19,47 @@ function toast(msg){
   if (!t) { t = document.createElement("div"); t.id = "toast"; t.className = "toast"; t.setAttribute("role","status"); t.setAttribute("aria-live","polite"); document.body.appendChild(t); }
   t.innerHTML = msg; t.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 1800);
 }
+const wlabel = w => Number(w) === 9 ? "EXTRA" : "WEEK " + w;
+const comma = n => String(Math.round(n * 10) / 10).replace(".", ",");
+const gradeStr = g => Number(g).toFixed(1).replace(".", ",");
 
-// ---------- data prep ----------
-FLASH.forEach(c => c.id = "f" + hashStr(c.q));
+// ---------- courses ----------
+const COURSES = window.COURSE_DATA || {};
+const ORDER = Object.keys(COURSES);
 const ST = {JJ:"Beide stellingen zijn juist.", JO:"Stelling 1 is juist, stelling 2 is onjuist.", OJ:"Stelling 1 is onjuist, stelling 2 is juist.", OO:"Beide stellingen zijn onjuist."};
-MC.forEach(q => {
-  q.id = "m" + hashStr(q.q + (q.s1 || "") + (q.s2 || ""));
-  if (q.st) { const keys = ["JJ","JO","OJ","OO"]; q.o = keys.map(k => ST[k]); q.a = keys.indexOf(q.a); q.fixed = true; }
+ORDER.forEach(id => {
+  const D = COURSES[id];
+  D.FLASH.forEach(c => c.id = "f" + hashStr(c.q));
+  D.MC.forEach(q => {
+    q.id = "m" + hashStr(q.q + (q.s1 || "") + (q.s2 || ""));
+    if (q.st) { const keys = ["JJ","JO","OJ","OO"]; q.o = keys.map(k => ST[k]); q.a = keys.indexOf(q.a); q.fixed = true; }
+  });
+  D.WK = Object.keys(D.WEEKS).map(Number);
 });
-const WK = Object.keys(WEEKS).map(Number);
+let CID = null, FLASH = [], MC = [], OPEN = [], SPRINT = [], WEEKS = {}, TABLES = [], LESSONS = {}, INFO = {}, WK = [];
+const L = k => `#${CID}-${k}`;
 
-// ---------- storage ----------
-const KEY = "manouk-gvr-v1";
-const fresh = () => ({cards:{}, mc:{}, open:{}, sprint:{}, exams:[], examDate:"", theme:""});
+// ---------- storage (per vak) ----------
+const fresh = () => ({cards:{}, mc:{}, open:{}, sprint:{}, exams:[], examDate:""});
+const STORES = {};
+function loadStore(id){
+  if (STORES[id]) return STORES[id];
+  let s = fresh();
+  try { const raw = localStorage.getItem("manouk-" + id + "-v1"); if (raw) s = Object.assign(fresh(), JSON.parse(raw)); } catch (e) {}
+  STORES[id] = s; return s;
+}
 let S = fresh();
-try { const raw = localStorage.getItem(KEY); if (raw) S = Object.assign(fresh(), JSON.parse(raw)); } catch (e) {}
-function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+function save(){ if (!CID) return; try { localStorage.setItem("manouk-" + CID + "-v1", JSON.stringify(S)); } catch (e) {} }
 
-// ---------- theme ----------
+// ---------- theme (voor alle vakken) ----------
+let THEME = "";
+try { THEME = localStorage.getItem("manouk-theme") || ""; if (!THEME) { const g = JSON.parse(localStorage.getItem("manouk-gvr-v1") || "{}"); if (g.theme) THEME = g.theme; } } catch (e) {}
 function applyTheme(){
   const r = document.documentElement;
-  if (S.theme) r.setAttribute("data-theme", S.theme); else if (r.dataset.ownTheme) r.removeAttribute("data-theme");
-  const b = $("#themeBtn"); if (b) b.textContent = S.theme === "dark" ? "Thema: donker" : S.theme === "light" ? "Thema: licht" : "Thema: automatisch";
+  if (THEME) r.setAttribute("data-theme", THEME); else if (r.dataset.ownTheme) r.removeAttribute("data-theme");
+  const b = $("#themeBtn"); if (b) b.textContent = THEME === "dark" ? "Thema: donker" : THEME === "light" ? "Thema: licht" : "Thema: automatisch";
 }
-function cycleTheme(){ S.theme = S.theme === "" ? "light" : S.theme === "light" ? "dark" : ""; document.documentElement.dataset.ownTheme = "1"; save(); applyTheme(); }
+function cycleTheme(){ THEME = THEME === "" ? "light" : THEME === "light" ? "dark" : ""; document.documentElement.dataset.ownTheme = "1"; try { localStorage.setItem("manouk-theme", THEME); } catch (e) {} applyTheme(); }
 
 // ---------- stats helpers ----------
 const cardState = c => S.cards[c.id];
@@ -52,8 +69,12 @@ function weekCards(w){ return FLASH.filter(c => w === "all" || c.w === w); }
 function weekMc(w){ return MC.filter(q => w === "all" || q.w === w); }
 function mcStats(list){ let ans = 0, ok = 0; list.forEach(q => { const s = S.mc[q.id]; if (s) { ans++; if (s.last) ok++; } }); return {ans, ok, total:list.length}; }
 function recordMc(q, right){ const s = S.mc[q.id] || {r:0, w:0, last:false}; if (right) s.r++; else s.w++; s.last = right; S.mc[q.id] = s; save(); }
-function examDays(){ if (!S.examDate) return null; const d = new Date(S.examDate + "T09:00:00"); if (isNaN(d)) return null; const t = new Date(); t.setHours(0,0,0,0); const e = new Date(d); e.setHours(0,0,0,0); return Math.round((e - t) / DAY); }
-const weekLabel = w => WEEKS[w] ? WEEKS[w].n : "";
+function daysUntil(str){ if (!str) return null; const d = new Date(str + "T09:00:00"); if (isNaN(d)) return null; const t = new Date(); t.setHours(0,0,0,0); d.setHours(0,0,0,0); return Math.round((d - t) / DAY); }
+function examGrade(score, total){
+  const E = INFO.exam || {};
+  if (E.guess) { const g = total / (E.k || 3); const f = Math.max(0, (score - g) / (total - g)); return {grade: Math.round((1 + 9 * f) * 10) / 10, frac: f}; }
+  return {grade: Math.round((1 + 9 * score / total) * 10) / 10, frac: score / total};
+}
 
 // ---------- icons ----------
 const I = {
@@ -64,7 +85,9 @@ const I = {
   open:'<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
   sprint:'<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',
   naslag:'<path d="M5 4h11a2 2 0 0 1 2 2v14H7a2 2 0 0 1-2-2z"/><path d="M5 18a2 2 0 0 1 2-2h11"/>',
-  leerpunten:'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.8 10.6c.6.6.8 1.3.8 2.4h6c0-1.1.2-1.8.8-2.4A6 6 0 0 0 12 3z"/>'
+  leerpunten:'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.8 10.6c.6.6.8 1.3.8 2.4h6c0-1.1.2-1.8.8-2.4A6 6 0 0 0 12 3z"/>',
+  terug:'<path d="M15 5l-7 7 7 7"/>',
+  vakken:'<rect x="3" y="4" width="7" height="16" rx="1.5"/><rect x="14" y="4" width="7" height="16" rx="1.5"/>'
 };
 const icon = k => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[k]}</svg>`;
 
@@ -73,7 +96,21 @@ const NAV = [
   ["open","Open vragen"],["sprint","Sprint"],["naslag","Naslag"],["leerpunten","Leerpunten"]
 ];
 function renderNav(cur){
-  $("#nav").innerHTML = NAV.map(([k, t]) => `<a href="#${k}" ${k === cur ? 'aria-current="page"' : ""}>${icon(k)}<span>${t}</span></a>`).join("");
+  const app = $(".app"); if (app) app.dataset.course = CID || "";
+  const mark = $("#brandMark"), sub = $("#brandSub"), brand = $(".brand");
+  if (!CID) {
+    if (mark) { mark.textContent = "§"; mark.classList.remove("txt"); }
+    if (sub) sub.textContent = "Rechten · jaar 1";
+    if (brand) brand.setAttribute("href", "#home");
+    $("#nav").innerHTML = `<a href="#home" aria-current="page">${icon("vakken")}<span>Alle vakken</span></a>` +
+      ORDER.map(id => `<a href="#${id}-start" data-course="${id}">${icon("start")}<span>${esc(COURSES[id].INFO.short)} · ${esc(COURSES[id].INFO.name)}</span></a>`).join("");
+    return;
+  }
+  if (mark) { mark.textContent = INFO.short; mark.classList.add("txt"); }
+  if (sub) sub.textContent = INFO.name;
+  if (brand) brand.setAttribute("href", L("start"));
+  $("#nav").innerHTML = `<a href="#home" class="nav-back">${icon("terug")}<span>Alle vakken</span></a>` +
+    NAV.map(([k, t]) => `<a href="${L(k)}" ${k === cur ? 'aria-current="page"' : ""}>${icon(k)}<span>${t}</span></a>`).join("");
 }
 
 // ---------- week filter chips ----------
@@ -86,12 +123,52 @@ function weekChips(cur, group, weeks){
 }
 
 // ======================================================================
-// START
+// HOOFDMENU
+// ======================================================================
+function courseCard(id){
+  const D = COURSES[id], st = loadStore(id), now = Date.now();
+  const n = D.FLASH.length, m = D.FLASH.filter(c => st.cards[c.id] && st.cards[c.id].box >= 3).length;
+  const due = D.FLASH.filter(c => st.cards[c.id] && st.cards[c.id].due <= now).length;
+  const ok = D.MC.filter(q => st.mc[q.id] && st.mc[q.id].last).length;
+  const d = daysUntil(st.examDate);
+  const last = st.exams[st.exams.length - 1];
+  let when = "Nog geen tentamendatum ingevuld";
+  if (d !== null) when = d > 1 ? `Nog ${d} dagen tot het tentamen` : d === 1 ? "Morgen tentamen!" : d === 0 ? "Vandaag tentamen. Succes!" : "Tentamendatum is geweest";
+  return `<a class="course" data-course="${id}" href="#${id}-start">
+    <div class="course-top"><span class="mark txt" aria-hidden="true">${esc(D.INFO.short)}</span><span class="eyebrow">${esc(D.INFO.code)}</span></div>
+    <h2>${esc(D.INFO.name)}</h2>
+    <div class="course-stats">
+      <span class="st"><span class="bar"><i style="width:${n ? Math.round(100 * m / n) : 0}%"></i></span><span class="tnum">${m}/${n} kaarten onder de knie</span></span>
+      <span class="st"><span class="bar good"><i style="width:${D.MC.length ? Math.round(100 * ok / D.MC.length) : 0}%"></i></span><span class="tnum">${ok}/${D.MC.length} oefenvragen goed</span></span>
+    </div>
+    <ul class="course-meta small">
+      <li>${esc(when)}</li>
+      <li>${due ? `${due} ${due === 1 ? "kaart" : "kaarten"} klaar om te herhalen` : "Geen herhalingen open"}</li>
+      <li>${last ? `Laatste proeftentamen: ${last.score}/${last.total} (indicatie ${gradeStr(last.grade)})` : "Nog geen proeftentamen gedaan"}</li>
+    </ul>
+    <span class="btn btn-primary">Oefen ${esc(D.INFO.short)}</span>
+  </a>`;
+}
+function viewHome(){
+  return `<div class="wrap">
+    <header class="hello">
+      <p class="eyebrow">Rechten · Universiteit Utrecht</p>
+      <h1>Hoi Manouk</h1>
+      <p class="lede">Kies het vak dat je wilt oefenen. Je voortgang wordt per vak apart bewaard.</p>
+    </header>
+    <div class="courses">${ORDER.map(courseCard).join("")}</div>
+    <p class="small muted">Wil je wisselen? Via ‘Alle vakken’ in het menu kom je altijd terug op dit overzicht.</p>
+  </div>`;
+}
+function bindHome(){}
+
+// ======================================================================
+// START (per vak)
 // ======================================================================
 function viewStart(){
   const due = FLASH.filter(isDue).length;
   const neu = FLASH.filter(c => !cardState(c)).length;
-  const d = examDays();
+  const d = daysUntil(S.examDate);
   let cd;
   if (d === null) cd = `<p class="eyebrow">Tentamendatum</p><p class="small muted">Vul de datum in, dan tellen we af.</p>`;
   else if (d > 1) cd = `<p class="eyebrow">Nog te gaan</p><p class="big tnum">${d} dagen</p>`;
@@ -103,12 +180,13 @@ function viewStart(){
   const lastExam = S.exams[S.exams.length - 1];
   const sub = d !== null && d >= 0
     ? (d === 0 ? "Vandaag is het zover. Neem rustig de leerpunten nog even door." : `Je hebt ${mast} van de ${total} flashcards onder de knie en ${ms.ok} van de ${ms.total} oefenvragen goed.`)
-    : `Alles uit je samenvatting en de oefentoets, omgezet in flashcards, tentamenvragen en casussen. ${mast} van de ${total} kaarten zitten er al in.`;
+    : `Alles uit je samenvatting en ${INFO.toets}, omgezet in flashcards, tentamenvragen en casussen. ${mast} van de ${total} kaarten zitten er al in.`;
   const reviewN = due + Math.min(neu, 20);
+  const note = INFO.startNote;
   return `<div class="wrap">
     <header class="hello">
-      <p class="eyebrow">Grondslagen van Recht · RGBUSBR001</p>
-      <h1>Hoi Manouk</h1>
+      <p class="eyebrow">${esc(INFO.short)} · ${esc(INFO.code)}</p>
+      <h1>${esc(INFO.name)}</h1>
       <p class="lede">${esc(sub)}</p>
     </header>
 
@@ -117,18 +195,18 @@ function viewStart(){
         <p class="eyebrow" style="color:inherit;opacity:.85">Vandaag herhalen</p>
         <p class="big tnum">${reviewN}</p>
         <p>${due ? (due === 1 ? "1 kaart staat klaar om te herhalen" : `${due} kaarten staan klaar om te herhalen`) : "Geen herhalingen open"}${neu ? `, plus ${Math.min(neu,20)} nieuwe.` : "."}</p>
-        <a class="btn" href="#kaarten" data-go-review>${reviewN ? "Start met herhalen" : "Bekijk alle kaarten"}</a>
+        <a class="btn" href="${L("kaarten")}" data-go-review>${reviewN ? "Start met herhalen" : "Bekijk alle kaarten"}</a>
       </div>
       <div class="today-side">
         <div class="panel countdown">
           ${cd}
-          <label class="small muted" for="examDate">Datum tentamen</label>
-          <input type="date" id="examDate" value="${esc(S.examDate)}">
+          <label class="small muted" for="examDate-${CID}">Datum tentamen</label>
+          <input type="date" id="examDate-${CID}" data-examdate value="${esc(S.examDate)}">
         </div>
         <div class="panel stack" style="gap:.4rem">
           <p class="eyebrow">Laatste proeftentamen</p>
-          ${lastExam ? `<p><b class="tnum">${lastExam.score}/${lastExam.total}</b> <span class="muted small">· indicatie ${lastExam.grade.toFixed(1).replace(".", ",")}</span></p>` : `<p class="small muted">Nog niet gedaan.</p>`}
-          <a class="btn-link small" href="#tentamen">${lastExam ? "Nog een keer" : "Doe een proeftentamen"}</a>
+          ${lastExam ? `<p><b class="tnum">${lastExam.score}/${lastExam.total}</b> <span class="muted small">· indicatie ${gradeStr(lastExam.grade)}</span></p>` : `<p class="small muted">Nog niet gedaan.</p>`}
+          <a class="btn-link small" href="${L("tentamen")}">${lastExam ? "Nog een keer" : "Doe een proeftentamen"}</a>
         </div>
       </div>
     </section>
@@ -136,17 +214,17 @@ function viewStart(){
     <section class="stack">
       <h2>Oefenen</h2>
       <div class="modes">
-        <a class="mode" href="#oefenen"><h3>${icon("oefenen")}Oefenvragen</h3><p>${MC.length} meerkeuzevragen in de stijl van de toets, met uitleg na elk antwoord.</p></a>
-        <a class="mode" href="#tentamen"><h3>${icon("tentamen")}Proeftentamen</h3><p>30 vragen achter elkaar, uitslag pas aan het eind.</p></a>
-        <a class="mode" href="#open"><h3>${icon("open")}Open vragen</h3><p>${OPEN.length} casussen van 15 punten. Zelf nakijken met het antwoordmodel.</p></a>
-        <a class="mode" href="#sprint"><h3>${icon("sprint")}Sprint</h3><p>${SPRINT.length} snelle rondes: herken de methode, rechter of denker.</p></a>
+        <a class="mode" href="${L("oefenen")}"><h3>${icon("oefenen")}Oefenvragen</h3><p>${MC.length} meerkeuzevragen in de stijl van de toets, met uitleg na elk antwoord.</p></a>
+        <a class="mode" href="${L("tentamen")}"><h3>${icon("tentamen")}Proeftentamen</h3><p>${INFO.exam.n} vragen achter elkaar, uitslag pas aan het eind.</p></a>
+        <a class="mode" href="${L("open")}"><h3>${icon("open")}Open vragen</h3><p>${OPEN.length} casussen zoals op de toets. Zelf nakijken met het antwoordmodel.</p></a>
+        <a class="mode" href="${L("sprint")}"><h3>${icon("sprint")}Sprint</h3><p>${SPRINT.length} snelle rondes: ${esc(INFO.sprintBlurb)}.</p></a>
       </div>
     </section>
 
-    <div class="callout" role="note">
-      <b>Let op: Wiarda</b>
-      <p>Een open norm uit de wet invullen waar de wet genoeg houvast geeft (zoals goed werkgeverschap) is volgens het antwoordmodel <b style="color:inherit">gematigd heteronoom</b>, niet autonoom. Je samenvatting zegt hier iets anders. <a href="#leerpunten">Meer leerpunten uit je oefentoets</a></p>
-    </div>
+    ${note ? `<div class="callout" role="note">
+      <b>${esc(note.t)}</b>
+      <p>${note.html} <a href="${L("leerpunten")}">Meer leerpunten uit ${esc(INFO.toets)}</a></p>
+    </div>` : ""}
 
     <section class="stack">
       <div class="row between"><h2>Voortgang per week</h2><span class="small muted">kaarten onder de knie · vragen goed</span></div>
@@ -157,7 +235,7 @@ function viewStart(){
           const pc = cs.length ? Math.round(100 * m / cs.length) : 0;
           const pq = qs.length ? Math.round(100 * st.ok / qs.length) : 0;
           return `<div class="wk">
-            <span class="nm">${w === 9 ? "EXTRA" : "WEEK " + w}</span>
+            <span class="nm">${wlabel(w)}</span>
             <span class="tt">${esc(WEEKS[w].t)}</span>
             <span class="st"><span class="bar"><i style="width:${pc}%"></i></span><span class="tnum">${m}/${cs.length} kaarten</span></span>
             <span class="st">${qs.length ? `<span class="bar good"><i style="width:${pq}%"></i></span><span class="tnum">${st.ok}/${qs.length} vragen</span>` : `<span class="small">alleen kaarten</span>`}</span>
@@ -168,7 +246,7 @@ function viewStart(){
   </div>`;
 }
 function bindStart(){
-  const inp = $("#examDate");
+  const inp = $("[data-examdate]");
   if (inp) inp.addEventListener("change", () => { S.examDate = inp.value; save(); render(); });
   const go = $("[data-go-review]");
   if (go) go.addEventListener("click", () => { cardSess = null; cardFilter = {w:"all", mode: FLASH.some(isDue) || FLASH.some(c => !cardState(c)) ? "herhaal" : "alles"}; });
@@ -195,7 +273,7 @@ function viewCards(){
   if (!cardSess) buildCardQueue();
   const s = cardSess, c = s.queue[s.i];
   const modeBtn = (k, t) => `<button data-mode="${k}" aria-pressed="${cardFilter.mode === k}">${t}</button>`;
-  const head = `<header class="stack" style="gap:.5rem"><p class="eyebrow">Flashcards</p><h1>Kaarten</h1>
+  const head = `<header class="stack" style="gap:.5rem"><p class="eyebrow">${esc(INFO.short)} · Flashcards</p><h1>Kaarten</h1>
     <p class="muted">Denk eerst zelf na, draai dan om en geef eerlijk aan hoe goed je het wist. Kaarten die je lastig vindt komen vaker terug.</p></header>
     <div class="toolbar">
       <div class="seg" role="group" aria-label="Soort ronde">${modeBtn("herhaal","Herhalen")}${modeBtn("alles","Alle kaarten")}${modeBtn("moeilijk","Moeilijke")}</div>
@@ -210,7 +288,7 @@ function viewCards(){
     return `<div class="wrap">${head}<div class="panel end">
       <p class="eyebrow">Ronde klaar</p><p class="big">${t[3] >= (t[1] + t[2] + t[3]) * .8 ? "Wauw, bijna alles wist je!" : "Goed gedaan, Manouk."}</p>
       <p class="muted">${t[3]} wist je, ${t[2]} twijfel, ${t[1]} nog niet. Kaarten die je niet wist komen morgen weer langs.</p>
-      <div class="row"><button class="btn btn-primary" data-again>Nog een ronde</button><a class="btn btn-ghost" href="#oefenen">Naar oefenvragen</a></div>
+      <div class="row"><button class="btn btn-primary" data-again>Nog een ronde</button><a class="btn btn-ghost" href="${L("oefenen")}">Naar oefenvragen</a></div>
     </div></div>`;
   }
   const st = cardState(c);
@@ -218,7 +296,7 @@ function viewCards(){
   return `<div class="wrap">${head}
     <div class="stack">
       <div class="fc" id="fc" tabindex="0" role="button" aria-label="${s.flipped ? "Antwoord zichtbaar" : "Draai de kaart om"}">
-        <div class="fc-meta"><span class="tag">${c.w === 9 ? "EXTRA" : "WEEK " + c.w} · ${badge}</span><span class="small muted tnum">${s.i + 1} / ${s.queue.length}</span></div>
+        <div class="fc-meta"><span class="tag">${wlabel(c.w)} · ${badge}</span><span class="small muted tnum">${s.i + 1} / ${s.queue.length}</span></div>
         <div class="fc-q">${fmt(c.q)}</div>
         ${s.flipped ? `<div class="fc-a">${fmt(c.a)}</div>` : `<div class="fc-hint">Klik op de kaart of druk op <kbd>spatie</kbd> om het antwoord te zien</div>`}
       </div>
@@ -271,10 +349,11 @@ function questionHTML(item, chosen, reveal){
     return `<li><button class="opt ${cls}" data-opt="${oi}" ${reveal ? "disabled" : ""}><span class="l">${LETTERS[pos]}</span><span>${fmt(q.o[oi])}</span></button></li>`;
   }).join("");
   return `<div class="q">
-    <div class="row"><span class="tag">${q.w === 9 ? "EXTRA" : "WEEK " + q.w} · ${esc(q.t)}</span></div>
+    <div class="row"><span class="tag">${wlabel(q.w)} · ${esc(q.t)}</span></div>
     <p class="q-text">${fmt(q.q)}</p>${stel}
     <ul class="opts">${opts}</ul></div>`;
 }
+function letterIndex(e, item){ const k = e.key.toUpperCase(); const i = LETTERS.indexOf(k); return item && i >= 0 && i < item.order.length ? i : -1; }
 
 // ======================================================================
 // PRACTICE
@@ -289,11 +368,11 @@ function buildPrac(){
 function viewPractice(){
   if (!prac) buildPrac();
   const wrongN = MC.filter(q => S.mc[q.id] && !S.mc[q.id].last).length;
-  const head = `<header class="stack" style="gap:.5rem"><p class="eyebrow">Meerkeuze</p><h1>Oefenvragen</h1>
-    <p class="muted">Nieuwe vragen in dezelfde vorm als je oefentoets: casussen, citaten en stellingen. Na elk antwoord zie je waarom.</p></header>
+  const head = `<header class="stack" style="gap:.5rem"><p class="eyebrow">${esc(INFO.short)} · Meerkeuze</p><h1>Oefenvragen</h1>
+    <p class="muted">Nieuwe vragen in dezelfde vorm als ${esc(INFO.toets)}: casussen, stellingen en begrippen. Na elk antwoord zie je waarom.</p></header>
     <div class="toolbar">
       <div class="seg" role="group" aria-label="Selectie"><button data-pw="0" aria-pressed="${!pracFilter.wrong}">Alle vragen</button><button data-pw="1" aria-pressed="${pracFilter.wrong}">Mijn fouten (${wrongN})</button></div>
-      ${weekChips(pracFilter.w, "pwk", WK.filter(w => w !== 9))}
+      ${weekChips(pracFilter.w, "pwk", WK.filter(w => MC.some(q => q.w === w)))}
     </div>`;
   if (!prac.queue.length) return `<div class="wrap">${head}<div class="empty">${pracFilter.wrong ? "Geen openstaande fouten in deze selectie. Mooi zo!" : "Geen vragen in deze selectie."}</div></div>`;
   const item = prac.queue[prac.i];
@@ -310,7 +389,7 @@ function viewPractice(){
     <div class="panel stack">${questionHTML(item, prac.chosen, reveal)}
       ${reveal ? `<div class="explain"><span class="verdict ${right ? "good" : "bad"}">${esc(prac.msg)}</span><p>${fmt(item.q.e)}</p></div>
       <div class="row"><button class="btn btn-primary" id="pnext">Volgende vraag</button><span class="small muted">of druk op <kbd>Enter</kbd></span></div>`
-      : `<p class="small muted">Tip: kies met <kbd>A</kbd> t/m <kbd>D</kbd></p>`}
+      : `<p class="small muted">Tip: kies met <kbd>A</kbd> t/m <kbd>${LETTERS[item.order.length - 1]}</kbd></p>`}
     </div></div>`;
 }
 function choosePrac(oi){
@@ -329,8 +408,7 @@ function bindPractice(){
   const f = $("[data-pfout]"); if (f) f.addEventListener("click", () => { pracFilter.wrong = true; buildPrac(); render(); });
 }
 function keyPractice(e){
-  const k = e.key.toUpperCase();
-  if (prac && prac.chosen === null && LETTERS.slice(0,4).includes(k)) { const item = prac.queue[prac.i]; if (item) { e.preventDefault(); choosePrac(item.order[LETTERS.indexOf(k)]); } }
+  if (prac && prac.chosen === null) { const item = prac.queue[prac.i]; const i = letterIndex(e, item); if (i >= 0) { e.preventDefault(); choosePrac(item.order[i]); } }
   else if (e.key === "Enter" && prac && prac.chosen !== null) { e.preventDefault(); nextPrac(); }
 }
 
@@ -347,17 +425,18 @@ function pickExam(n){
 }
 function fmtTime(ms){ const s = Math.floor(ms / 1000); return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0"); }
 function viewExam(){
-  const head = `<header class="stack" style="gap:.5rem"><p class="eyebrow">Proeftentamen</p><h1>Tentamensimulatie</h1></header>`;
+  const E = INFO.exam;
+  const head = `<header class="stack" style="gap:.5rem"><p class="eyebrow">${esc(INFO.short)} · Proeftentamen</p><h1>${esc(E.title)}</h1></header>`;
   if (!exam) {
     const hist = S.exams.slice(-8).reverse();
     return `<div class="wrap">${head}
       <div class="panel stack">
-        <p>30 meerkeuzevragen uit alle weken, net als het meerkeuzedeel van het echte tentamen. Je kunt vrij heen en weer bladeren en ziet pas na het inleveren wat goed was.</p>
-        <p class="small muted">Het cijfer is een indicatie voor alleen het meerkeuzedeel (1 + 9 × score/30). Oefen de open vragen apart.</p>
+        <p>${esc(E.desc)}</p>
+        <p class="small muted">${esc(E.note)}</p>
         <div class="row"><button class="btn btn-primary" id="examStart">Start proeftentamen</button></div>
       </div>
       ${hist.length ? `<section class="stack"><h2>Eerdere pogingen</h2><div class="panel" style="padding:.6rem 1rem"><table class="hist tnum"><thead><tr><th>Datum</th><th>Score</th><th>Indicatie</th><th>Tijd</th></tr></thead><tbody>
-        ${hist.map(h => `<tr><td>${new Date(h.date).toLocaleDateString("nl-NL",{day:"numeric",month:"short"})}</td><td>${h.score}/${h.total}</td><td>${h.grade.toFixed(1).replace(".",",")}</td><td>${fmtTime(h.ms)}</td></tr>`).join("")}
+        ${hist.map(h => `<tr><td>${new Date(h.date).toLocaleDateString("nl-NL",{day:"numeric",month:"short"})}</td><td>${h.score}/${h.total}</td><td>${gradeStr(h.grade)}</td><td>${fmtTime(h.ms)}</td></tr>`).join("")}
       </tbody></table></div></section>` : ""}
     </div>`;
   }
@@ -377,45 +456,45 @@ function viewExam(){
   </div>`;
 }
 function examResult(head){
-  const r = exam.result;
+  const r = exam.result, E = INFO.exam;
   const byW = {};
   exam.qs.forEach((it, i) => { const w = it.q.w; byW[w] = byW[w] || {ok:0, n:0}; byW[w].n++; if (exam.ans[i] === it.q.a) byW[w].ok++; });
   return `<div class="wrap">${head}
     <div class="panel stack">
       <p class="eyebrow">Uitslag</p>
-      <div class="result-big"><span class="n tnum">${r.score}/${r.total}</span><span class="grade tnum">indicatie ${r.grade.toFixed(1).replace(".",",")}</span></div>
-      <p class="${r.score >= 18 ? "praise" : ""}">${examPraise(r.score, r.total)}</p><p class="muted small">Tijd: ${fmtTime(r.ms)}.</p>
-      <div class="weeks">${Object.keys(byW).sort((a,b)=>a-b).map(w => { const b = byW[w], p = Math.round(100 * b.ok / b.n); return `<div class="wk" style="grid-template-columns:4.2rem minmax(0,1fr) 5rem"><span class="nm">WEEK ${w}</span><span class="bar ${p >= 60 ? "good" : ""}"><i style="width:${p}%"></i></span><span class="small tnum">${b.ok}/${b.n} goed</span></div>`; }).join("")}</div>
-      <div class="row"><button class="btn btn-primary" id="eRestart">Nieuw proeftentamen</button><a class="btn btn-ghost" href="#oefenen" data-to-fout>Oefen mijn fouten</a></div>
+      <div class="result-big"><span class="n tnum">${r.score}/${r.total}</span><span class="grade tnum">indicatie ${gradeStr(r.grade)}</span></div>
+      ${E.pts && E.pts !== 1 ? `<p class="small muted tnum">${comma(r.score * E.pts)} van de ${comma(r.total * E.pts)} punten${E.guess ? ", raadkans verrekend in de indicatie" : ""}</p>` : ""}
+      <p class="${r.frac >= .55 ? "praise" : ""}">${examPraise(r.frac)}</p><p class="muted small">Tijd: ${fmtTime(r.ms)}.</p>
+      <div class="weeks">${Object.keys(byW).sort((a,b)=>a-b).map(w => { const b = byW[w], p = Math.round(100 * b.ok / b.n); return `<div class="wk" style="grid-template-columns:4.2rem minmax(0,1fr) 5rem"><span class="nm">${wlabel(w)}</span><span class="bar ${p >= 60 ? "good" : ""}"><i style="width:${p}%"></i></span><span class="small tnum">${b.ok}/${b.n} goed</span></div>`; }).join("")}</div>
+      <div class="row"><button class="btn btn-primary" id="eRestart">Nieuw proeftentamen</button><a class="btn btn-ghost" href="${L("oefenen")}" data-to-fout>Oefen mijn fouten</a></div>
     </div>
     <section class="stack"><h2>Alle vragen nalopen</h2><div class="panel" style="padding:.4rem 1.2rem">
       ${exam.qs.map((it, i) => { const ok = exam.ans[i] === it.q.a; const yours = exam.ans[i] === undefined ? "niet beantwoord" : it.q.o[exam.ans[i]]; return `<details class="rev">
-        <summary><span class="dot ${ok ? "ok" : "no"}">${ok ? "✓" : "✗"}</span><span><span class="small muted tnum">Vraag ${i + 1} · week ${it.q.w}</span><br>${esc(it.q.st ? it.q.q + " " + it.q.s1 + " / " + it.q.s2 : it.q.q)}</span></summary>
+        <summary><span class="dot ${ok ? "ok" : "no"}">${ok ? "✓" : "✗"}</span><span><span class="small muted tnum">Vraag ${i + 1} · ${wlabel(it.q.w).toLowerCase()}</span><br>${esc(it.q.st ? it.q.q + " " + it.q.s1 + " / " + it.q.s2 : it.q.q)}</span></summary>
         <div class="body">${ok ? "" : `<p><b class="verdict bad">Jouw antwoord:</b> ${esc(yours)}</p>`}<p><b class="verdict good">Juist:</b> ${esc(it.q.o[it.q.a])}</p><p class="muted">${fmt(it.q.e)}</p></div></details>`; }).join("")}
     </div></section>
   </div>`;
 }
-function examPraise(sc, tot){
-  const p = sc / tot;
-  if (p >= .9) return "Wauw, Manouk! Dit is bijna foutloos.";
-  if (p >= .8) return "Heel sterk. Dit zit er echt goed in.";
-  if (p >= .6) return "Voldoende, mooi zo! Hieronder zie je waar nog punten liggen.";
-  if (p >= .4) return "Je bent goed op weg. Oefen de weken met de kortste balken nog even.";
+function examPraise(f){
+  if (f >= .9) return "Wauw, Manouk! Dit is bijna foutloos.";
+  if (f >= .75) return "Heel sterk. Dit zit er echt goed in.";
+  if (f >= .55) return "Voldoende, mooi zo! Hieronder zie je waar nog punten liggen.";
+  if (f >= .35) return "Je bent goed op weg. Oefen de weken met de kortste balken nog even.";
   return "Dit is een begin. Start met de flashcards van de weken hieronder.";
 }
 function handIn(){
   let score = 0;
   exam.qs.forEach((it, i) => { const ok = exam.ans[i] === it.q.a; if (ok) score++; if (exam.ans[i] !== undefined) recordMc(it.q, ok); });
   const total = exam.qs.length, ms = Date.now() - exam.start;
-  const grade = Math.round((1 + 9 * score / total) * 10) / 10;
-  exam.result = {score, total, ms, grade}; exam.done = true; examConfirm = false;
+  const {grade, frac} = examGrade(score, total);
+  exam.result = {score, total, ms, grade, frac}; exam.done = true; examConfirm = false;
   S.exams.push({date: Date.now(), score, total, grade, ms}); save();
   stopTimer(); render(); window.scrollTo({top:0});
 }
 function startTimer(){ stopTimer(); timerId = setInterval(() => { const t = $("#timer"); if (t && exam && !exam.done) t.textContent = fmtTime(Date.now() - exam.start); else stopTimer(); }, 1000); }
 function stopTimer(){ if (timerId) { clearInterval(timerId); timerId = null; } }
 function bindExam(){
-  const st = $("#examStart"); if (st) st.addEventListener("click", () => { exam = {qs: pickExam(30), ans:{}, cur:0, start: Date.now(), done:false}; examConfirm = false; render(); });
+  const st = $("#examStart"); if (st) st.addEventListener("click", () => { exam = {qs: pickExam(INFO.exam.n), ans:{}, cur:0, start: Date.now(), done:false}; examConfirm = false; render(); });
   if (exam && !exam.done) startTimer();
   $$("[data-goto]").forEach(b => b.addEventListener("click", () => { exam.cur = Number(b.dataset.goto); render(); }));
   $$("[data-opt]").forEach(b => b.addEventListener("click", () => { if (!exam || exam.done) return; exam.ans[exam.cur] = Number(b.dataset.opt); render(); }));
@@ -429,8 +508,8 @@ function bindExam(){
 }
 function keyExam(e){
   if (!exam || exam.done) return;
-  const k = e.key.toUpperCase();
-  if (LETTERS.slice(0,4).includes(k)) { e.preventDefault(); exam.ans[exam.cur] = exam.qs[exam.cur].order[LETTERS.indexOf(k)]; render(); }
+  const item = exam.qs[exam.cur]; const i = letterIndex(e, item);
+  if (i >= 0) { e.preventDefault(); exam.ans[exam.cur] = item.order[i]; render(); }
   else if (e.key === "ArrowRight" && exam.cur < exam.qs.length - 1) { exam.cur++; render(); }
   else if (e.key === "ArrowLeft" && exam.cur > 0) { exam.cur--; render(); }
 }
@@ -438,24 +517,26 @@ function keyExam(e){
 // ======================================================================
 // OPEN QUESTIONS
 // ======================================================================
-let openSel = null, openReveal = {};
+let openSel = null, openReveal = {}, openResetAsk = false;
+const openTotal = o => o.parts.reduce((a, p) => a + p.p, 0);
 function openScore(o){ const st = S.open[o.id]; if (!st || !st.checks) return null; let s = 0, any = false; o.parts.forEach(p => { const ch = st.checks[p.l]; if (ch) { any = true; p.c.forEach((c, i) => { if (ch[i]) s += c.p; }); } }); return any ? s : null; }
 function viewOpen(){
   if (!openSel) {
-    return `<div class="wrap"><header class="stack" style="gap:.5rem"><p class="eyebrow">Open vragen</p><h1>Casussen</h1>
-      <p class="muted">Precies zoals het open deel van je tentamen: een casus met vraag a (3 punten), b (4 punten) en c (8 punten). Schrijf eerst je antwoord, open dan het antwoordmodel en vink aan wat je goed had.</p></header>
-      <div class="olist">${OPEN.map(o => { const sc = openScore(o); return `<button class="ocard" data-open="${o.id}">
-        <span class="tag">${o.w.map(w => w === 9 ? "EXTRA" : "WEEK " + w).join(" · ")}</span><h3>${esc(o.title)}</h3>
-        <span class="small muted tnum">${sc === null ? "Nog niet gemaakt" : `Laatste score ${String(sc).replace(".",",")}/15`}</span></button>`; }).join("")}</div>
-      <div class="callout"><b>Zo scoor je punten</b><p>Noem het begrip, geef de definitie uit de stof, en pas het toe op de casus. Beantwoord alleen wat er gevraagd wordt: bij de Keen-vraag in je oefentoets leverde ‘recht en moraal’ geen punten op, omdat het om recht en beleid ging.</p></div>
+    const tip = INFO.openTip;
+    return `<div class="wrap"><header class="stack" style="gap:.5rem"><p class="eyebrow">${esc(INFO.short)} · Open vragen</p><h1>Casussen</h1>
+      <p class="muted">${esc(INFO.openIntro)}</p></header>
+      <div class="olist">${OPEN.map(o => { const sc = openScore(o), tot = openTotal(o); return `<button class="ocard" data-open="${o.id}">
+        <span class="tag">${o.w.map(wlabel).join(" · ")}</span><h3>${esc(o.title)}</h3>
+        <span class="small muted tnum">${o.parts.length} deelvragen · ${tot} punten${sc === null ? "" : ` · laatste score ${comma(sc)}/${tot}`}</span></button>`; }).join("")}</div>
+      ${tip ? `<div class="callout"><b>${esc(tip.t)}</b><p>${esc(tip.d)}</p></div>` : ""}
     </div>`;
   }
   const o = OPEN.find(x => x.id === openSel);
   const st = S.open[o.id] || (S.open[o.id] = {drafts:{}, checks:{}});
-  const sc = openScore(o);
+  const sc = openScore(o), tot = openTotal(o);
   return `<div class="wrap">
     <div><button class="btn-link small" id="oBack">Terug naar alle casussen</button></div>
-    <header class="stack" style="gap:.5rem"><p class="eyebrow">Open vraag · 15 punten</p><h1>${esc(o.title)}</h1></header>
+    <header class="stack" style="gap:.5rem"><p class="eyebrow">Open vraag · ${tot} punten</p><h1>${esc(o.title)}</h1></header>
     <div class="casus"><p class="eyebrow">Casus</p><p class="txt">${esc(o.intro)}</p></div>
     ${o.parts.map(p => {
       const draft = (st.drafts && st.drafts[p.l]) || "";
@@ -464,10 +545,10 @@ function viewOpen(){
       const ch = (st.checks && st.checks[p.l]) || [];
       const got = p.c.reduce((a, c, i) => a + (ch[i] ? c.p : 0), 0);
       return `<section class="part">
-        <div class="part-h"><h3>Vraag ${p.l}</h3><span class="tag">${p.p} punten</span></div>
+        <div class="part-h"><h3>Vraag ${p.l}</h3><span class="tag">${p.p} punten${p.wi ? ` · ca. ${p.wi} woorden` : ""}</span></div>
         <p>${fmt(p.q)}</p>
-        <textarea id="ta-${o.id}-${p.l}" data-draft="${p.l}" placeholder="Typ hier je antwoord..." aria-label="Antwoord vraag ${p.l}">${esc(draft)}</textarea>
-        <span class="wc tnum" id="wc-${p.l}">Aantal woorden: ${words}</span>
+        <textarea id="ta-${CID}-${o.id}-${p.l}" data-draft="${p.l}" placeholder="Typ hier je antwoord..." aria-label="Antwoord vraag ${p.l}">${esc(draft)}</textarea>
+        <span class="wc tnum" id="wc-${p.l}">Aantal woorden: ${words}${p.wi ? ` (indicatie ${p.wi})` : ""}</span>
         ${rev ? `<div class="stack" style="gap:.7rem">
             <p class="model-h">Beoordelingscriteria: vink aan wat in jouw antwoord staat</p>
             <ul class="crit">${p.c.map((c, i) => `<li><label><input type="checkbox" data-crit="${p.l}:${i}" ${ch[i] ? "checked" : ""}><span>${esc(c.t)}</span><span class="pt">+${c.p} pt</span></label></li>`).join("")}</ul>
@@ -476,11 +557,10 @@ function viewOpen(){
           </div>` : `<div><button class="btn btn-ghost" data-reveal="${p.l}">Bekijk antwoordmodel</button></div>`}
       </section>`;
     }).join("")}
-    <div class="total"><span>${sc === 15 ? "Volle score, Manouk. Top!" : "Totaal voor deze casus"}</span><b class="tnum">${sc === null ? "0" : String(sc).replace(".",",")}/15</b></div>
+    <div class="total"><span>${sc === tot ? "Volle score, Manouk. Top!" : "Totaal voor deze casus"}</span><b class="tnum">${sc === null ? "0" : comma(sc)}/${tot}</b></div>
     <div class="row"><button class="btn btn-ghost" id="oReset">Wis mijn antwoorden</button>${openResetAsk ? `<span class="small">Zeker weten? <button class="btn-link" id="oResetYes">Ja, wissen</button> · <button class="btn-link" id="oResetNo">Nee</button></span>` : ""}</div>
   </div>`;
 }
-let openResetAsk = false;
 function bindOpen(){
   $$("[data-open]").forEach(b => b.addEventListener("click", () => { openSel = b.dataset.open; openResetAsk = false; render(); window.scrollTo({top:0}); }));
   const back = $("#oBack"); if (back) back.addEventListener("click", () => { openSel = null; render(); });
@@ -488,7 +568,8 @@ function bindOpen(){
   const o = OPEN.find(x => x.id === openSel), st = S.open[o.id];
   $$("[data-draft]").forEach(t => t.addEventListener("input", () => {
     st.drafts = st.drafts || {}; st.drafts[t.dataset.draft] = t.value; save();
-    const w = t.value.trim() ? t.value.trim().split(/\s+/).length : 0; const wc = $("#wc-" + t.dataset.draft); if (wc) wc.textContent = "Aantal woorden: " + w;
+    const p = o.parts.find(x => x.l === t.dataset.draft);
+    const w = t.value.trim() ? t.value.trim().split(/\s+/).length : 0; const wc = $("#wc-" + t.dataset.draft); if (wc) wc.textContent = "Aantal woorden: " + w + (p && p.wi ? ` (indicatie ${p.wi})` : "");
   }));
   $$("[data-reveal]").forEach(b => b.addEventListener("click", () => { openReveal[o.id + b.dataset.reveal] = true; st.checks = st.checks || {}; st.checks[b.dataset.reveal] = st.checks[b.dataset.reveal] || []; save(); const y = window.scrollY; render(); window.scrollTo({top:y}); }));
   $$("[data-crit]").forEach(cb => cb.addEventListener("change", () => { const [l, i] = cb.dataset.crit.split(":"); st.checks[l] = st.checks[l] || []; st.checks[l][Number(i)] = cb.checked; save(); const y = window.scrollY; render(); window.scrollTo({top:y}); }));
@@ -503,9 +584,9 @@ function bindOpen(){
 let sp = null, spTimer = null;
 function viewSprint(){
   if (!sp) {
-    return `<div class="wrap"><header class="stack" style="gap:.5rem"><p class="eyebrow">Sprint</p><h1>Snel herkennen</h1>
-      <p class="muted">Op het tentamen moet je vaak in een paar seconden zien welke methode, rechter of denker er in een citaat zit. Kies zo snel je kunt.</p></header>
-      <div class="slist">${SPRINT.map(s => { const best = S.sprint[s.id]; return `<button class="ocard" data-sp="${s.id}"><span class="tag">${s.w === 9 ? "EXTRA" : "WEEK " + s.w}</span><h3>${esc(s.title)}</h3><span class="small muted tnum">${s.items.length} vragen${best ? ` · beste ${best.ok}/${s.items.length}` : ""}</span></button>`; }).join("")}</div>
+    return `<div class="wrap"><header class="stack" style="gap:.5rem"><p class="eyebrow">${esc(INFO.short)} · Sprint</p><h1>Snel herkennen</h1>
+      <p class="muted">${esc(INFO.sprintIntro)}</p></header>
+      <div class="slist">${SPRINT.map(s => { const best = S.sprint[s.id]; return `<button class="ocard" data-sp="${s.id}"><span class="tag">${wlabel(s.w)}</span><h3>${esc(s.title)}</h3><span class="small muted tnum">${s.items.length} vragen${best ? ` · beste ${best.ok}/${s.items.length}` : ""}</span></button>`; }).join("")}</div>
     </div>`;
   }
   const set = sp.set, it = sp.items[sp.i];
@@ -531,7 +612,7 @@ function pickSprint(c){
   if (!sp || sp.picked !== null) return; const it = sp.items[sp.i]; sp.picked = c;
   if (c === it.a) { sp.ok++; sp.streak++; if (STREAK[sp.streak]) toast(`<span class="h">${heart}</span> ${STREAK[sp.streak]}`); } else { sp.miss.push(it); sp.streak = 0; }
   render();
-  clearTimeout(spTimer); spTimer = setTimeout(() => { if (!sp) return; sp.i++; sp.picked = null; if (sp.i >= sp.items.length) finishSprint(); render(); }, c === it.a ? 650 : 1500);
+  clearTimeout(spTimer); spTimer = setTimeout(() => { if (!sp) return; sp.i++; sp.picked = null; if (sp.i >= sp.items.length) finishSprint(); if (current === "sprint") render(); }, c === it.a ? 650 : 1500);
 }
 function finishSprint(){ sp.ms = Date.now() - sp.start; const b = S.sprint[sp.set.id]; if (!b || sp.ok > b.ok || (sp.ok === b.ok && sp.ms < b.ms)) { S.sprint[sp.set.id] = {ok: sp.ok, ms: sp.ms}; save(); } }
 function startSprint(id){ const set = SPRINT.find(s => s.id === id); sp = {set, items: shuffle(set.items), i:0, ok:0, picked:null, start: Date.now(), miss:[], streak:0}; render(); }
@@ -548,24 +629,24 @@ function keySprint(e){ if (!sp || sp.picked !== null) return; const it = sp.item
 // ======================================================================
 let nas = {w:"all", q:""};
 function viewNaslag(){
-  return `<div class="wrap wide"><header class="stack" style="gap:.5rem"><p class="eyebrow">Naslag</p><h1>Overzichten</h1>
+  return `<div class="wrap wide"><header class="stack" style="gap:.5rem"><p class="eyebrow">${esc(INFO.short)} · Naslag</p><h1>Overzichten</h1>
     <p class="muted">Alle schema's uit je samenvatting op één plek, plus zoeken in alle begrippen.</p></header>
-    <input class="search" id="nasQ" type="search" placeholder="Zoek een begrip, denker of arrest, bijv. ‘lex certa’ of ‘Catoochi’" value="${esc(nas.q)}" aria-label="Zoeken">
+    <input class="search" id="nasQ" type="search" placeholder="${esc(INFO.searchHint)}" value="${esc(nas.q)}" aria-label="Zoeken">
     <div id="nasBody">${naslagBody()}</div></div>`;
 }
-function hl(text, q){ const t = esc(text); if (!q) return t.replace(/\n/g,"<br>"); const re = new RegExp("(" + q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "gi"); return t.replace(re, "<mark>$1</mark>").replace(/\n/g,"<br>"); }
+function hl(text, q){ const t = esc(text); if (!q) return t.replace(/\n/g,"<br>"); const re = new RegExp("(" + esc(q).replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "gi"); return t.replace(re, "<mark>$1</mark>").replace(/\n/g,"<br>"); }
 function naslagBody(){
   const q = nas.q.trim();
   if (q) {
     const ql = q.toLowerCase();
     const hits = FLASH.filter(c => (c.q + " " + c.a).toLowerCase().includes(ql));
     return `<p class="small muted">${hits.length} ${hits.length === 1 ? "resultaat" : "resultaten"}</p>
-      <div class="panel defs" style="padding-block:.3rem">${hits.length ? hits.map(c => `<div class="def"><span class="tag" style="align-self:flex-start">${c.w === 9 ? "EXTRA" : "WEEK " + c.w}</span><h3>${hl(c.q, q)}</h3><p>${hl(c.a, q)}</p></div>`).join("") : `<p class="muted" style="padding:1rem 0">Niets gevonden. Probeer een ander woord.</p>`}</div>`;
+      <div class="panel defs" style="padding-block:.3rem">${hits.length ? hits.map(c => `<div class="def"><span class="tag" style="align-self:flex-start">${wlabel(c.w)}</span><h3>${hl(c.q, q)}</h3><p>${hl(c.a, q)}</p></div>`).join("") : `<p class="muted" style="padding:1rem 0">Niets gevonden. Probeer een ander woord.</p>`}</div>`;
   }
   const tw = [...new Set(TABLES.map(t => t.w))].sort((a,b)=>a-b);
   const tables = TABLES.filter(t => nas.w === "all" || t.w === nas.w);
   return `<div class="stack">${weekChips(nas.w, "nw", tw)}
-    ${tables.map(t => `<section class="stack" style="gap:.6rem"><div class="row"><h2>${esc(t.t)}</h2><span class="tag">WEEK ${t.w}</span></div>
+    ${tables.map(t => `<section class="stack" style="gap:.6rem"><div class="row"><h2>${esc(t.t)}</h2><span class="tag">${wlabel(t.w)}</span></div>
       <div class="tbl-wrap"><table class="tbl"><thead><tr>${t.h.map(h => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${t.r.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div></section>`).join("")}</div>`;
 }
 function bindNaslag(){
@@ -579,65 +660,95 @@ function bindNasChips(){ $$("[data-nw]").forEach(b => b.addEventListener("click"
 // LEERPUNTEN
 // ======================================================================
 function viewLessons(){
-  const L = LESSONS;
-  return `<div class="wrap"><header class="stack" style="gap:.5rem"><p class="eyebrow">Leerpunten</p><h1>Wat je oefentoets leert</h1>
-    <p class="muted">De oefentoets lijkt sterk op het echte tentamen en laat precies zien waar de punten liggen. Dit zijn de lessen eruit.</p></header>
+  const Ls = LESSONS;
+  const hasMc = w => MC.some(q => q.w === w);
+  return `<div class="wrap"><header class="stack" style="gap:.5rem"><p class="eyebrow">${esc(INFO.short)} · Leerpunten</p><h1>Wat ${esc(INFO.toets)} leert</h1>
+    <p class="muted">${esc(INFO.lessonsIntro)}</p></header>
 
-    <section class="stack"><h2>Zo ziet het tentamen eruit</h2><ul class="plain">${L.format.map(f => `<li>${esc(f)}</li>`).join("")}</ul></section>
+    <section class="stack"><h2>Zo ziet het tentamen eruit</h2><ul class="plain">${Ls.format.map(f => `<li>${esc(f)}</li>`).join("")}</ul></section>
 
-    <section class="stack fix"><h2>Klopt niet helemaal in je samenvatting</h2>
-      ${L.corrections.map(c => `<div class="callout"><b>${esc(c.t)}</b><p>${esc(c.d)}</p></div>`).join("")}
-    </section>
+    ${Ls.corrections && Ls.corrections.length ? `<section class="stack fix"><h2>${esc(INFO.correctionsTitle || "Klopt niet helemaal in je samenvatting")}</h2>
+      ${Ls.corrections.map(c => `<div class="callout"><b>${esc(c.t)}</b><p>${esc(c.d)}</p></div>`).join("")}
+    </section>` : ""}
 
-    <section class="stack"><h2>Valkuilen uit de oefentoets</h2>
-      <div class="lessons">${L.weak.map(x => `<div class="lesson"><span class="tag" style="align-self:flex-start">WEEK ${x.w}</span><h3>${esc(x.t)}</h3><p>${esc(x.d)}</p><button class="btn-link small" style="align-self:flex-start" data-train="${x.w}">Oefen week ${x.w}</button></div>`).join("")}</div>
+    <section class="stack"><h2>Valkuilen uit ${esc(INFO.toets)}</h2>
+      <div class="lessons">${Ls.weak.map(x => `<div class="lesson"><span class="tag" style="align-self:flex-start">${wlabel(x.w)}</span><h3>${esc(x.t)}</h3><p>${esc(x.d)}</p>${hasMc(x.w) ? `<button class="btn-link small" style="align-self:flex-start" data-train="${x.w}">Oefen ${x.w === 9 ? "de extra vragen" : "week " + x.w}</button>` : ""}</div>`).join("")}</div>
     </section>
 
     <section class="stack"><h2>Strategie voor de vragen</h2>
-      <div class="lessons">${L.tips.map(x => `<div class="lesson"><h3>${esc(x.t)}</h3><p>${esc(x.d)}</p></div>`).join("")}</div>
+      <div class="lessons">${Ls.tips.map(x => `<div class="lesson"><h3>${esc(x.t)}</h3><p>${esc(x.d)}</p></div>`).join("")}</div>
     </section>
 
-    <section class="stack"><h2>Kwam in de oefentoets voor, maar staat niet in je samenvatting</h2>
+    <section class="stack"><h2>Kwam in ${esc(INFO.toets)} voor, maar staat niet in je samenvatting</h2>
       <p class="muted small">De belangrijkste punten hiervan zitten als flashcards onder ‘Extra’. Kijk de rest na in je readers en collegeaantekeningen.</p>
-      <ul class="plain">${L.missing.map(m => `<li>${esc(m)}</li>`).join("")}</ul>
-      <div><a class="btn btn-ghost" href="#kaarten" data-extra>Oefen de extra kaarten</a></div>
+      <ul class="plain">${Ls.missing.map(m => `<li>${esc(m)}</li>`).join("")}</ul>
+      <div><a class="btn btn-ghost" href="${L("kaarten")}" data-extra>Oefen de extra kaarten</a></div>
     </section>
   </div>`;
 }
 function bindLessons(){
-  $$("[data-train]").forEach(b => b.addEventListener("click", () => { pracFilter = {w: Number(b.dataset.train), wrong:false}; prac = null; location.hash = "#oefenen"; }));
+  $$("[data-train]").forEach(b => b.addEventListener("click", () => { pracFilter = {w: Number(b.dataset.train), wrong:false}; prac = null; location.hash = L("oefenen"); }));
   const x = $("[data-extra]"); if (x) x.addEventListener("click", () => { cardFilter = {w:9, mode:"alles"}; cardSess = null; });
 }
+
+// ======================================================================
+// VAK WISSELEN
+// ======================================================================
+const SESS = {};
+function stash(){ if (CID) SESS[CID] = {cardFilter, cardSess, pracFilter, prac, exam, examConfirm, openSel, openReveal, openResetAsk, sp, nas}; }
+function useCourse(id){
+  if (CID === id) return;
+  stash(); stopTimer(); clearTimeout(spTimer);
+  CID = id; const D = COURSES[id];
+  ({FLASH, MC, OPEN, SPRINT, WEEKS, TABLES, LESSONS, INFO, WK} = D);
+  S = loadStore(id);
+  const s = SESS[id] || {};
+  cardFilter = s.cardFilter || {w:"all", mode:"herhaal"}; cardSess = s.cardSess || null;
+  pracFilter = s.pracFilter || {w:"all", wrong:false}; prac = s.prac || null;
+  exam = s.exam || null; examConfirm = !!s.examConfirm;
+  openSel = s.openSel || null; openReveal = s.openReveal || {}; openResetAsk = !!s.openResetAsk;
+  sp = s.sp && s.sp.picked === null ? s.sp : null; nas = s.nas || {w:"all", q:""};
+}
+function leaveCourse(){ if (!CID) return; stash(); stopTimer(); clearTimeout(spTimer); CID = null; }
 
 // ======================================================================
 // ROUTER
 // ======================================================================
 const VIEWS = {
+  home:[viewHome, bindHome],
   start:[viewStart, bindStart], kaarten:[viewCards, bindCards, keyCards], oefenen:[viewPractice, bindPractice, keyPractice],
   tentamen:[viewExam, bindExam, keyExam], open:[viewOpen, bindOpen], sprint:[viewSprint, bindSprint, keySprint],
   naslag:[viewNaslag, bindNaslag], leerpunten:[viewLessons, bindLessons]
 };
-let current = "start";
+let current = null;
 function render(){
   const v = VIEWS[current];
   $("#view").innerHTML = v[0]();
   v[1]();
 }
-function route(){
+function parseHash(){
   const h = (location.hash || "").replace("#", "");
-  const next = VIEWS[h] ? h : "start";
-  if (next !== current) { stopTimer(); window.scrollTo({top:0}); }
-  current = next; renderNav(current); render();
+  if (!h || h === "home") return {c:null, v:"home"};
+  const m = h.match(/^([a-z0-9]+)(?:-([a-z]+))?$/);
+  if (m && COURSES[m[1]]) return {c:m[1], v: m[2] && VIEWS[m[2]] && m[2] !== "home" ? m[2] : "start"};
+  if (VIEWS[h] && h !== "home" && COURSES.gvr) return {c:"gvr", v:h}; // oude links zonder vak
+  return {c:null, v:"home"};
+}
+function route(){
+  const {c, v} = parseHash();
+  if (c !== CID || v !== current) { stopTimer(); window.scrollTo({top:0}); }
+  if (c) useCourse(c); else leaveCourse();
+  current = v; renderNav(v); render();
 }
 document.addEventListener("keydown", e => {
   const t = e.target; if (t && (t.tagName === "TEXTAREA" || t.tagName === "INPUT" || t.isContentEditable)) return;
   if (e.metaKey || e.ctrlKey || e.altKey) return;
-  const v = VIEWS[current]; if (v[2]) v[2](e);
+  const v = VIEWS[current]; if (v && v[2]) v[2](e);
 });
 window.addEventListener("hashchange", route);
 function init(){
   const tb = $("#themeBtn"); if (tb) tb.addEventListener("click", cycleTheme);
-  if (S.theme) document.documentElement.dataset.ownTheme = "1";
+  if (THEME) document.documentElement.dataset.ownTheme = "1";
   applyTheme(); route();
 }
 if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();

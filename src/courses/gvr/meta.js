@@ -1,3 +1,19 @@
+window.INFO = {
+id:"gvr", code:"RGBUSBR001", name:"Grondslagen van Recht", short:"GVR",
+toets:"je oefentoets",
+exam:{n:30, guess:false, pts:1, title:"Tentamensimulatie",
+  desc:"30 meerkeuzevragen uit alle weken, net als het meerkeuzedeel van het echte tentamen. Je kunt vrij heen en weer bladeren en ziet pas na het inleveren wat goed was.",
+  note:"Het cijfer is een indicatie voor alleen het meerkeuzedeel (1 + 9 × score/30). Oefen de open vragen apart."},
+startNote:{t:"Let op: Wiarda", html:"Een open norm uit de wet invullen waar de wet genoeg houvast geeft (zoals goed werkgeverschap) is volgens het antwoordmodel <b style=\"color:inherit\">gematigd heteronoom</b>, niet autonoom. Je samenvatting zegt hier iets anders."},
+openIntro:"Precies zoals het open deel van je tentamen: een casus met vraag a (3 punten), b (4 punten) en c (8 punten). Schrijf eerst je antwoord, open dan het antwoordmodel en vink aan wat je goed had.",
+openTip:{t:"Zo scoor je punten", d:"Noem het begrip, geef de definitie uit de stof, en pas het toe op de casus. Beantwoord alleen wat er gevraagd wordt: bij de Keen-vraag in je oefentoets leverde ‘recht en moraal’ geen punten op, omdat het om recht en beleid ging."},
+lessonsIntro:"De oefentoets lijkt sterk op het echte tentamen en laat precies zien waar de punten liggen. Dit zijn de lessen eruit.",
+correctionsTitle:"Klopt niet helemaal in je samenvatting",
+sprintBlurb:"herken de methode, rechter of denker",
+sprintIntro:"Op het tentamen moet je vaak in een paar seconden zien welke methode, rechter of denker er in een citaat zit. Kies zo snel je kunt.",
+searchHint:"Zoek een begrip, denker of arrest, bijv. ‘lex certa’ of ‘Catoochi’"
+};
+
 window.WEEKS = {
 1:{n:"Week 1",t:"Wat doet het recht?"},
 2:{n:"Week 2",t:"Rechtsfilosofie en de grotverkenners"},
