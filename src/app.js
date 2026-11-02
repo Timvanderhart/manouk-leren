@@ -526,7 +526,7 @@ function viewOpen(){
     return `<div class="wrap"><header class="stack" style="gap:.5rem"><p class="eyebrow">${esc(INFO.short)} · Open vragen</p><h1>Casussen</h1>
       <p class="muted">${esc(INFO.openIntro)}</p></header>
       <div class="olist">${OPEN.map(o => { const sc = openScore(o), tot = openTotal(o); return `<button class="ocard" data-open="${o.id}">
-        <span class="tag">${o.w.map(wlabel).join(" · ")}</span><h3>${esc(o.title)}</h3>
+        <span class="tag">${o.src ? esc(o.src.toUpperCase()) + " · " : ""}${o.w.map(wlabel).join(" · ")}</span><h3>${esc(o.title)}</h3>
         <span class="small muted tnum">${o.parts.length} deelvragen · ${tot} punten${sc === null ? "" : ` · laatste score ${comma(sc)}/${tot}`}</span></button>`; }).join("")}</div>
       ${tip ? `<div class="callout"><b>${esc(tip.t)}</b><p>${esc(tip.d)}</p></div>` : ""}
     </div>`;
@@ -536,8 +536,9 @@ function viewOpen(){
   const sc = openScore(o), tot = openTotal(o);
   return `<div class="wrap">
     <div><button class="btn-link small" id="oBack">Terug naar alle casussen</button></div>
-    <header class="stack" style="gap:.5rem"><p class="eyebrow">Open vraag · ${tot} punten</p><h1>${esc(o.title)}</h1></header>
+    <header class="stack" style="gap:.5rem"><p class="eyebrow">Open vraag · ${tot} punten${o.src ? " · " + esc(o.src) : ""}</p><h1>${esc(o.title)}</h1></header>
     <div class="casus"><p class="eyebrow">Casus</p><p class="txt">${esc(o.intro)}</p></div>
+    ${o.note ? `<p class="small muted">${esc(o.note)}</p>` : ""}
     ${o.parts.map(p => {
       const draft = (st.drafts && st.drafts[p.l]) || "";
       const words = draft.trim() ? draft.trim().split(/\s+/).length : 0;

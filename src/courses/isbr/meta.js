@@ -5,7 +5,7 @@ exam:{n:20, guess:true, k:3, pts:2.5, title:"Eindtoets-simulatie",
   desc:"20 meerkeuzevragen uit alle weken, meestal met drie antwoordopties, net als het meerkeuzedeel van de eindtoets. Je kunt vrij heen en weer bladeren en ziet pas na het inleveren wat goed was.",
   note:"Elke vraag is 2,5 punt waard (50 punten in totaal). Het cijfer is een indicatie voor alleen het meerkeuzedeel, met de raadkans verrekend zoals op de echte toets."},
 startNote:{t:"Let op: eenheid van regeringsbeleid", html:"Dit staat niet in je samenvatting, maar kwam twee keer terug op de eindtoets van 2025: ministers zijn verantwoordelijk voor besluiten van de ministerraad, ook als ze het er niet mee eens waren, en een minister spreekt namens het hele kabinet (art. 45 lid 3 Gw)."},
-openIntro:"Net als op de eindtoets: een casus met deelvragen van 6 tot 12 punten en een indicatie van het aantal woorden. Schrijf eerst je antwoord, open dan het antwoordmodel en vink aan wat je goed had. Let op: het officiële antwoordmodel van de open vragen zat niet in de PDF; deze modellen zijn opgesteld op basis van je samenvatting.",
+openIntro:"Net als op de eindtoets: een casus met deelvragen van 6 tot 12 punten en een indicatie van het aantal woorden. Schrijf eerst je antwoord, open dan het antwoordmodel en vink aan wat je goed had. De drie casussen met ‘Eindtoets 2025’ zijn de echte open vragen van vorig jaar, nagekeken met het officiële antwoordmodel. De andere zes zijn nieuw, in dezelfde stijl.",
 openTip:{t:"Zo scoor je punten", d:"Noem steeds het juiste artikel en, waar het past, de uitspraak (bijvoorbeeld Amsterdams dakterras of Harderwijk). Volg een stappenplan en pas elke stap toe op de feiten van de casus. Schrijf niets overbodigs op: onjuiste of niet-relevante informatie kan punten kosten."},
 lessonsIntro:"De eindtoets van vorig jaar laat goed zien waar de punten liggen. Dit zijn de lessen eruit.",
 correctionsTitle:"Let op bij je samenvatting",
@@ -134,6 +134,9 @@ tips:[
 {t:"Elke vraag staat los",d:"Iedere vraag wordt apart nagekeken. Verwijs dus niet naar je antwoord bij een andere vraag, maar herhaal kort wat nodig is."},
 {t:"Oefen met je bundel",d:"Zoek instanties op in het alfabetisch register (zoals het CBR) en herken een regeling aan het opschrift (‘Wet van’, ‘Besluit van’, ‘Regeling van de Minister’), de vindplaats (Stb. of Stcrt.) of de aanhef als die erin staat."},
 {t:"Let op exacte termen",d:"De derde stap van Harderwijk heet evenwichtigheid, niet redelijkheid. Een ‘bevestigingsfunctie’ van bezwaar bestaat niet. Kleine woorden maken een optie fout."},
+{t:"Pas de theorie toe op de casus",d:"Bij de trias-vraag van 2025 kreeg je voor alleen een uitleg van de trias, zonder toepassing op de casus, maximaal 1 punt. Leg steeds uit wat de regel hier concreet betekent."},
+{t:"Alleen wat in de casus speelt",d:"In 2025 leverde het enquêterecht noemen geen punten op, omdat er in de casus geen enquête was. Ook het onderscheid tussen regelgevende en bestuursbevoegdheid speelde daar niet."},
+{t:"Artikel én lid, plus uitspraak",d:"Het antwoordmodel noemt steeds precies: art. 9 lid 1 Gw, art. 11 lid 1 en 2 EVRM, art. 5 lid 1 Wom, art. 1:1 lid 1 sub a Awb, art. 2:1 lid 2 BW. En uitspraken bij naam: Sunday Times, HR Verfbommetje."},
 {t:"Gebruik de stappenplannen",d:"Bestuursorgaan, besluit, rechtsbescherming en grondrechten hebben allemaal een stappenplan. Dat is meteen de structuur van een goed open antwoord."}
 ],
 weak:[
@@ -161,6 +164,9 @@ missing:[
 "Art. 51 Gw (samenstelling Staten-Generaal) en art. 64 Gw (ontbinding verplicht tot nieuwe verkiezingen)",
 "Een regeling herkennen in je wettenbundel aan de aanhef (formele wet, AMvB, ministeriële regeling)",
 "De Wet wapens en munitie: zelf beslissingsruimte vinden in een bijzondere wet",
-"Het CBR als publiekrechtelijke rechtspersoon (Wegenverkeerswet 1994)"
+"Het CBR als publiekrechtelijke rechtspersoon: art. 2:1 lid 2 BW, art. 4z en 4ac Wegenverkeerswet 1994",
+"EHRM Sunday Times (kenbaar en voorzienbaar) en HR Verfbommetje (uiting op maatschappelijk gebied)",
+"Moties: art. 8.20 Reglement van Orde TK en art. 72 Gw; stemmen: art. 67 lid 4 Gw",
+"Evenredigheid stricto sensu als derde subonderdeel van ‘noodzakelijk in een democratische samenleving’"
 ]
 };
