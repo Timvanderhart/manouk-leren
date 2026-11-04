@@ -110,24 +110,24 @@ tips:[
 {t:"Exacte definities scoren",d:"Formele democratie: gelijkheid = gelijkheid van stemmen. Materiële democratie: gelijkheid = gelijkwaardigheid. Zulke precieze koppelingen staan letterlijk in het antwoordmodel."}
 ],
 weak:[
-{t:"Radbruch vs. Dworkin",d:"Dworkin: rechtvaardigheid zit in het recht zelf (beginselen). Radbruch: niet noodzakelijk; positief recht gaat voor, behalve bij extreem onrecht.",w:3},
-{t:"Natuurrecht en legitimiteit",d:"Legitimiteit hangt af van de verhouding tot hogere morele normen, niet van een handeling van de rechter.",w:3},
-{t:"Hart en moraal",d:"Geldigheid is onafhankelijk van moraliteit. Iets kan illegaal maar moreel juist zijn.",w:3},
-{t:"Conclusie van de A-G",d:"Komt vóór het arrest, dus bevat nooit de overwegingen van de HR in die zaak.",w:5},
-{t:"Catoochi en gewoonterecht",d:"Geen aanvullende maar derogerende werking; en gewoonterecht wordt niet alleen door de HR erkend.",w:6},
-{t:"Formeel recht herkennen",d:"Formeel recht regelt procedures en bevoegdheden in de procedure; materieel recht regelt rechten en plichten zelf.",w:1},
-{t:"Subjectief vs. objectief recht",d:"‘Rechten’ in een BW-artikel zijn meestal subjectieve rechten (art. 3:82 BW: twee keer subjectief).",w:1},
-{t:"Elektriciteitsarrest",d:"Elektriciteit is een ‘goed’: extensieve uitleg, geen analogie en geen restrictieve uitleg.",w:7},
-{t:"Lex certa vs. lex scripta",d:"Een vage maar wél geschreven norm (‘zich hinderlijk gedragen’) is een lex certa-probleem.",w:7},
-{t:"Wiarda en open normen",d:"Kijk naar de houvast die het recht biedt. Goed werkgeverschap invullen of een regel interpreteren: voldoende houvast, dus gematigd heteronoom. Hier gaan makkelijk alle 3 punten verloren.",w:7},
-{t:"Democratie en gelijkheid",d:"Bij discussie over de inhoud (wat is rechtvaardig?) gaat het om materiële democratie. Ken de gelijkheidsdefinities per opvatting.",w:8},
-{t:"Gelijkheid en neutraliteit",d:"Een beperking die voor alle overtuigingen geldt en iedereen gelijke ruimte laat: formele gelijkheid + inclusieve neutraliteit.",w:8},
-{t:"Materiële gelijkheid: beste motivering",d:"Niet alleen ‘verschillen tussen groepen’, maar: kijken naar het ongelijke resultaat als er geen compensatie is voor de ongelijke uitgangspositie.",w:8}
+{k:"radbruch",t:"Radbruch vs. Dworkin",d:"Dworkin: rechtvaardigheid zit in het recht zelf (beginselen). Radbruch: niet noodzakelijk; positief recht gaat voor, behalve bij extreem onrecht.",w:3},
+{k:"natuurrecht",t:"Natuurrecht en legitimiteit",d:"Legitimiteit hangt af van de verhouding tot hogere morele normen, niet van een handeling van de rechter.",w:3},
+{k:"hart",t:"Hart en moraal",d:"Geldigheid is onafhankelijk van moraliteit. Iets kan illegaal maar moreel juist zijn.",w:3},
+{k:"arrestlezen",t:"Conclusie van de A-G",d:"Komt vóór het arrest, dus bevat nooit de overwegingen van de HR in die zaak.",w:5},
+{k:"gewoonte",t:"Catoochi en gewoonterecht",d:"Geen aanvullende maar derogerende werking; en gewoonterecht wordt niet alleen door de HR erkend.",w:6},
+{k:"soortenrecht",t:"Formeel recht herkennen",d:"Formeel recht regelt procedures en bevoegdheden in de procedure; materieel recht regelt rechten en plichten zelf.",w:1},
+{k:"soortenrecht",t:"Subjectief vs. objectief recht",d:"‘Rechten’ in een BW-artikel zijn meestal subjectieve rechten (art. 3:82 BW: twee keer subjectief).",w:1},
+{k:"interpretatie",t:"Elektriciteitsarrest",d:"Elektriciteit is een ‘goed’: extensieve uitleg, geen analogie en geen restrictieve uitleg.",w:7},
+{k:"legaliteit",t:"Lex certa vs. lex scripta",d:"Een vage maar wél geschreven norm (‘zich hinderlijk gedragen’) is een lex certa-probleem.",w:7},
+{k:"wiarda",t:"Wiarda en open normen",d:"Kijk naar de houvast die het recht biedt. Goed werkgeverschap invullen of een regel interpreteren: voldoende houvast, dus gematigd heteronoom. Hier gaan makkelijk alle 3 punten verloren.",w:7},
+{k:"democratie",t:"Democratie en gelijkheid",d:"Bij discussie over de inhoud (wat is rechtvaardig?) gaat het om materiële democratie. Ken de gelijkheidsdefinities per opvatting.",w:8},
+{k:"neutraliteit",t:"Gelijkheid en neutraliteit",d:"Een beperking die voor alle overtuigingen geldt en iedereen gelijke ruimte laat: formele gelijkheid + inclusieve neutraliteit.",w:8},
+{k:"vrijheid",t:"Materiële gelijkheid: beste motivering",d:"Niet alleen ‘verschillen tussen groepen’, maar: kijken naar het ongelijke resultaat als er geen compensatie is voor de ongelijke uitgangspositie.",w:8}
 ],
 corrections:[
-{t:"Wiarda: open normen",d:"Je samenvatting koppelt ‘een open norm invullen’ aan autonome rechtsvinding. Volgens het antwoordmodel van de oefentoets is het invullen van goed werkgeverschap (art. 7:611 BW) gematigd heteronoom, omdat de wet daar voldoende houvast biedt. Doorslaggevend is dus hoeveel houvast het bestaande recht geeft: weinig concrete houvast betekent autonoom, voldoende houvast betekent gematigd heteronoom."},
-{t:"Art. 81 Gw",d:"Je samenvatting noemt art. 81 Gw bij de herkenningsregel. In de oefentoets geldt het ook als veranderingsregel. Beide kan: het zegt wie wetten maakt (verandering) en waaraan je een wet herkent (herkenning)."},
-{t:"Veranderingsregels zijn breder",d:"Ook regels waarmee burgers zelf hun rechtsverhoudingen veranderen, zoals de overeenkomst (art. 6:213 BW), zijn veranderingsregels. Een aansprakelijkheidsregel als art. 6:162 BW is dat niet."}
+{k:"wiarda",t:"Wiarda: open normen",d:"Je samenvatting koppelt ‘een open norm invullen’ aan autonome rechtsvinding. Volgens het antwoordmodel van de oefentoets is het invullen van goed werkgeverschap (art. 7:611 BW) gematigd heteronoom, omdat de wet daar voldoende houvast biedt. Doorslaggevend is dus hoeveel houvast het bestaande recht geeft: weinig concrete houvast betekent autonoom, voldoende houvast betekent gematigd heteronoom."},
+{k:"hart",t:"Art. 81 Gw",d:"Je samenvatting noemt art. 81 Gw bij de herkenningsregel. In de oefentoets geldt het ook als veranderingsregel. Beide kan: het zegt wie wetten maakt (verandering) en waaraan je een wet herkent (herkenning)."},
+{k:"hart",t:"Veranderingsregels zijn breder",d:"Ook regels waarmee burgers zelf hun rechtsverhoudingen veranderen, zoals de overeenkomst (art. 6:213 BW), zijn veranderingsregels. Een aansprakelijkheidsregel als art. 6:162 BW is dat niet."}
 ],
 missing:[
 "Witteveen, ‘De geordende wereld van het recht’ (H. V): erkende rechtsbeginselen vs. achtergrondbeginselen",

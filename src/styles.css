@@ -293,3 +293,35 @@ ul.plain{margin:0;padding-left:1.1rem;display:flex;flex-direction:column;gap:.35
 @media (max-width:860px){ .nav a.nav-back{border-bottom:1px solid var(--line);border-radius:var(--r-sm);margin-bottom:0} .brand small{max-width:9rem} }
 
 .ocard .tag,.lesson .tag{align-self:flex-start}
+
+/* ---------- aandachtspunten ---------- */
+.tlist{display:flex;flex-direction:column;gap:.6rem}
+.trow{display:grid;grid-template-columns:minmax(0,1fr) 8.5rem;gap:1rem;align-items:center;text-align:left;width:100%;padding:1rem 1.2rem;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);cursor:pointer;transition:border-color .15s,transform .15s}
+.trow:hover{border-color:var(--rose);transform:translateY(-1px)}
+.trow.first{border-color:var(--rose);box-shadow:var(--shadow)}
+.trow-main{display:flex;flex-direction:column;gap:.3rem;min-width:0}
+.trow-t{font-family:var(--f-display);font-weight:800;font-size:1.1rem;line-height:1.25}
+.trow-side{display:flex;flex-direction:column;gap:.3rem;font-size:.75rem;color:var(--muted)}
+.trow-go{font-weight:700;color:var(--rose-deep);font-size:.82rem;margin-top:.15rem}
+.tag.hot{background:var(--rose);color:var(--on-rose)}
+.tag.warn{background:var(--warn-soft);color:var(--warn)}
+@media (max-width:640px){
+  .trow{grid-template-columns:minmax(0,1fr);gap:.6rem}
+  .trow-side{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:.7rem}
+  .trow-side .trow-go{grid-column:1 / -1}
+}
+.sdot{display:inline-block;width:.55rem;height:.55rem;border-radius:50%;margin-right:.4rem;background:var(--line);vertical-align:.05em;flex:none}
+.sdot.zwak{background:var(--bad)} .sdot.beter{background:var(--warn)} .sdot.goed{background:var(--good)}
+.legend{display:inline-flex;flex-wrap:wrap;gap:.3rem .9rem;margin-left:.3rem}
+.legend > span{white-space:nowrap}
+.tgroups{display:flex;flex-direction:column;gap:1.1rem}
+.tgroup{display:flex;flex-direction:column;gap:.5rem}
+.tgroup .chip,.chips .chip{text-align:left}
+.stof{padding-block:.3rem}
+.stof .def h3{font-family:var(--f-display);font-weight:800;font-size:1.05rem;line-height:1.35}
+.stof .def.hard{border-left:3px solid var(--warn);padding-left:.9rem;margin-left:-1rem}
+.next{background:var(--rose-soft);border-color:transparent;box-shadow:none}
+.topic-pill{gap:.5rem}
+.topic-pill .chip{cursor:default}
+.next .btn-ghost{background:var(--surface)}
+.panel > details.rev:first-child{border-top:0}

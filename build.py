@@ -17,7 +17,7 @@ app = (SRC / "app.js").read_text(encoding="utf-8")
 parts = ["window.COURSE_DATA = {};"]
 for cid in COURSES:
     files = "\n".join((SRC / "courses" / cid / f).read_text(encoding="utf-8")
-                      for f in ["meta.js", "flashcards.js", "mc.js", "open.js", "sprint.js"])
+                      for f in ["meta.js", "topics.js", "flashcards.js", "mc.js", "open.js", "sprint.js"])
     parts.append(f"(function(){{ var window = {{}};\n{files}\nCOURSE_DATA.{cid} = window; }})();")
 data = "\n".join(parts)
 

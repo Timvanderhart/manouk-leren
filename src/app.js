@@ -35,8 +35,10 @@ ORDER.forEach(id => {
     if (q.st) { const keys = ["JJ","JO","OJ","OO"]; q.o = keys.map(k => ST[k]); q.a = keys.indexOf(q.a); q.fixed = true; }
   });
   D.WK = Object.keys(D.WEEKS).map(Number);
+  D.TOPICS = D.TOPICS || [];
+  D.TOPIC = {}; D.TOPICS.forEach(t => D.TOPIC[t.k] = t);
 });
-let CID = null, FLASH = [], MC = [], OPEN = [], SPRINT = [], WEEKS = {}, TABLES = [], LESSONS = {}, INFO = {}, WK = [];
+let CID = null, FLASH = [], MC = [], OPEN = [], SPRINT = [], WEEKS = {}, TABLES = [], LESSONS = {}, INFO = {}, WK = [], TOPICS = [], TOPIC = {};
 const L = k => `#${CID}-${k}`;
 
 // ---------- storage (per vak) ----------
@@ -69,6 +71,29 @@ function weekCards(w){ return FLASH.filter(c => w === "all" || c.w === w); }
 function weekMc(w){ return MC.filter(q => w === "all" || q.w === w); }
 function mcStats(list){ let ans = 0, ok = 0; list.forEach(q => { const s = S.mc[q.id]; if (s) { ans++; if (s.last) ok++; } }); return {ans, ok, total:list.length}; }
 function recordMc(q, right){ const s = S.mc[q.id] || {r:0, w:0, last:false}; if (right) s.r++; else s.w++; s.last = right; S.mc[q.id] = s; save(); }
+// ---------- onderwerpen: waar gaat het vaak mis? ----------
+// zwak = staat nu nog fout (vraag) of lastig (kaart); beter = eerder fout, nu goed; goed = geoefend zonder fouten; nieuw = nog niet geoefend
+function topicStats(D, st, t){
+  const qs = D.MC.filter(q => q.k === t.k), cs = D.FLASH.filter(c => c.k === t.k);
+  let wrong = 0, right = 0, open = 0, answered = 0, hard = 0, miss = 0, seen = 0;
+  qs.forEach(q => { const s = st.mc[q.id]; if (s) { answered++; wrong += s.w; right += s.r; if (!s.last) open++; } });
+  cs.forEach(c => { const s = st.cards[c.id]; if (s) { seen++; if (s.box <= 1) hard++; miss += s.f || 0; } });
+  const tries = wrong + right, rate = tries ? wrong / tries : 0;
+  const score = open * 3 + wrong * 1.5 + hard + miss * .5 + rate * 2;
+  const status = (open || hard) ? "zwak" : (wrong || miss) ? "beter" : (answered || seen) ? "goed" : "nieuw";
+  return {t, qs, cs, wrong, right, open, answered, hard, miss, tries, rate, score, status};
+}
+function allTopicStats(D, st){ return D.TOPICS.map(t => topicStats(D, st, t)); }
+function weakTopics(D, st){ return allTopicStats(D, st).filter(x => x.status === "zwak").sort((a, b) => b.score - a.score); }
+const plural = (n, one, more) => `${n} ${n === 1 ? one : more}`;
+function statLine(s){
+  const p = [];
+  if (s.wrong) p.push(`${s.wrong} keer fout`);
+  if (s.open) p.push(`${plural(s.open, "vraag", "vragen")} nog fout`);
+  if (s.hard) p.push(`${plural(s.hard, "kaart", "kaarten")} lastig`);
+  if (!p.length && s.tries) p.push(`${s.right} keer goed`);
+  return p.join(" · ");
+}
 function daysUntil(str){ if (!str) return null; const d = new Date(str + "T09:00:00"); if (isNaN(d)) return null; const t = new Date(); t.setHours(0,0,0,0); d.setHours(0,0,0,0); return Math.round((d - t) / DAY); }
 function examGrade(score, total){
   const E = INFO.exam || {};
@@ -87,12 +112,13 @@ const I = {
   naslag:'<path d="M5 4h11a2 2 0 0 1 2 2v14H7a2 2 0 0 1-2-2z"/><path d="M5 18a2 2 0 0 1 2-2h11"/>',
   leerpunten:'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.8 10.6c.6.6.8 1.3.8 2.4h6c0-1.1.2-1.8.8-2.4A6 6 0 0 0 12 3z"/>',
   terug:'<path d="M15 5l-7 7 7 7"/>',
+  aandacht:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/>',
   vakken:'<rect x="3" y="4" width="7" height="16" rx="1.5"/><rect x="14" y="4" width="7" height="16" rx="1.5"/>'
 };
 const icon = k => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[k]}</svg>`;
 
 const NAV = [
-  ["start","Start"],["kaarten","Flashcards"],["oefenen","Oefenvragen"],["tentamen","Proeftentamen"],
+  ["start","Start"],["kaarten","Flashcards"],["oefenen","Oefenvragen"],["aandacht","Aandachtspunten"],["tentamen","Proeftentamen"],
   ["open","Open vragen"],["sprint","Sprint"],["naslag","Naslag"],["leerpunten","Leerpunten"]
 ];
 function renderNav(cur){
@@ -132,6 +158,7 @@ function courseCard(id){
   const ok = D.MC.filter(q => st.mc[q.id] && st.mc[q.id].last).length;
   const d = daysUntil(st.examDate);
   const last = st.exams[st.exams.length - 1];
+  const nWeak = weakTopics(D, st).length;
   let when = "Nog geen tentamendatum ingevuld";
   if (d !== null) when = d > 1 ? `Nog ${d} dagen tot het tentamen` : d === 1 ? "Morgen tentamen!" : d === 0 ? "Vandaag tentamen. Succes!" : "Tentamendatum is geweest";
   return `<a class="course" data-course="${id}" href="#${id}-start">
@@ -145,6 +172,7 @@ function courseCard(id){
       <li>${esc(when)}</li>
       <li>${due ? `${due} ${due === 1 ? "kaart" : "kaarten"} klaar om te herhalen` : "Geen herhalingen open"}</li>
       <li>${last ? `Laatste proeftentamen: ${last.score}/${last.total} (indicatie ${gradeStr(last.grade)})` : "Nog geen proeftentamen gedaan"}</li>
+      ${nWeak ? `<li>${plural(nWeak, "onderwerp", "onderwerpen")} met extra aandacht</li>` : ""}
     </ul>
     <span class="btn btn-primary">Oefen ${esc(D.INFO.short)}</span>
   </a>`;
@@ -183,6 +211,7 @@ function viewStart(){
     : `Alles uit je samenvatting en ${INFO.toets}, omgezet in flashcards, tentamenvragen en casussen. ${mast} van de ${total} kaarten zitten er al in.`;
   const reviewN = due + Math.min(neu, 20);
   const note = INFO.startNote;
+  const weak = weakTopics(COURSES[CID], S);
   return `<div class="wrap">
     <header class="hello">
       <p class="eyebrow">${esc(INFO.short)} · ${esc(INFO.code)}</p>
@@ -221,6 +250,11 @@ function viewStart(){
       </div>
     </section>
 
+    ${weak.length ? `<section class="stack">
+      <div class="row between"><h2>Extra aandacht nodig</h2><a class="btn-link small" href="${L("aandacht")}">Alle ${weak.length} aandachtspunten</a></div>
+      <div class="tlist">${weak.slice(0, 3).map((s, i) => topicRow(s, i === 0)).join("")}</div>
+    </section>` : ""}
+
     ${note ? `<div class="callout" role="note">
       <b>${esc(note.t)}</b>
       <p>${note.html} <a href="${L("leerpunten")}">Meer leerpunten uit ${esc(INFO.toets)}</a></p>
@@ -249,18 +283,23 @@ function bindStart(){
   const inp = $("[data-examdate]");
   if (inp) inp.addEventListener("change", () => { S.examDate = inp.value; save(); render(); });
   const go = $("[data-go-review]");
-  if (go) go.addEventListener("click", () => { cardSess = null; cardFilter = {w:"all", mode: FLASH.some(isDue) || FLASH.some(c => !cardState(c)) ? "herhaal" : "alles"}; });
+  if (go) go.addEventListener("click", () => { cardSess = null; cardFilter = {w:"all", mode: FLASH.some(isDue) || FLASH.some(c => !cardState(c)) ? "herhaal" : "alles", k:null}; });
+  bindTopicLinks();
 }
 
 // ======================================================================
 // FLASHCARDS
 // ======================================================================
-let cardFilter = {w:"all", mode:"herhaal"};
+let cardFilter = {w:"all", mode:"herhaal", k:null};
 let cardSess = null;
 function buildCardQueue(){
-  const pool = weekCards(cardFilter.w);
+  if (cardFilter.k && !TOPIC[cardFilter.k]) cardFilter.k = null;
+  const pool = cardFilter.k ? FLASH.filter(c => c.k === cardFilter.k) : weekCards(cardFilter.w);
   let q;
-  if (cardFilter.mode === "herhaal") {
+  if (cardFilter.k && cardFilter.mode === "alles") {
+    const hardFirst = c => cardState(c) && cardState(c).box <= 1;
+    q = shuffle(pool.filter(hardFirst)).concat(shuffle(pool.filter(c => !hardFirst(c))));
+  } else if (cardFilter.mode === "herhaal") {
     const due = shuffle(pool.filter(isDue));
     const neu = pool.filter(c => !cardState(c)).slice(0, 20);
     q = due.concat(neu);
@@ -277,7 +316,7 @@ function viewCards(){
     <p class="muted">Denk eerst zelf na, draai dan om en geef eerlijk aan hoe goed je het wist. Kaarten die je lastig vindt komen vaker terug.</p></header>
     <div class="toolbar">
       <div class="seg" role="group" aria-label="Soort ronde">${modeBtn("herhaal","Herhalen")}${modeBtn("alles","Alle kaarten")}${modeBtn("moeilijk","Moeilijke")}</div>
-      ${weekChips(cardFilter.w, "cw")}
+      ${cardFilter.k ? topicPill(cardFilter.k, "data-cclear", "Alle onderwerpen") : weekChips(cardFilter.w, "cw")}
     </div>`;
   if (!s.queue.length) {
     const msg = cardFilter.mode === "moeilijk" ? "Er zijn (nog) geen kaarten die je als lastig hebt gemarkeerd." : cardFilter.mode === "herhaal" ? "Niets meer te herhalen voor vandaag in deze selectie. Lekker bezig!" : "Geen kaarten in deze selectie.";
@@ -288,7 +327,9 @@ function viewCards(){
     return `<div class="wrap">${head}<div class="panel end">
       <p class="eyebrow">Ronde klaar</p><p class="big">${t[3] >= (t[1] + t[2] + t[3]) * .8 ? "Wauw, bijna alles wist je!" : "Goed gedaan, Manouk."}</p>
       <p class="muted">${t[3]} wist je, ${t[2]} twijfel, ${t[1]} nog niet. Kaarten die je niet wist komen morgen weer langs.</p>
-      <div class="row"><button class="btn btn-primary" data-again>Nog een ronde</button><a class="btn btn-ghost" href="${L("oefenen")}">Naar oefenvragen</a></div>
+      <div class="row"><button class="btn btn-primary" data-again>Nog een ronde</button>${cardFilter.k && MC.some(q => q.k === cardFilter.k)
+        ? `<button class="btn btn-ghost" data-topic-prac="${esc(cardFilter.k)}">Oefen de vragen van dit onderwerp</button>`
+        : `<a class="btn btn-ghost" href="${L("oefenen")}">Naar oefenvragen</a>`}</div>
     </div></div>`;
   }
   const st = cardState(c);
@@ -312,7 +353,7 @@ function rateCard(r){
   const s = cardSess, c = s && s.queue[s.i]; if (!c || !s.flipped) return;
   const st = S.cards[c.id] || {box:0, due:0, n:0}, now = Date.now();
   const INT = [0,1,2,4,8,16];
-  if (r === 1) { st.box = 1; st.due = now; if ((s.requeued[c.id] || 0) < 2) { s.requeued[c.id] = (s.requeued[c.id] || 0) + 1; s.queue.splice(Math.min(s.i + 4, s.queue.length), 0, c); } }
+  if (r === 1) { st.box = 1; st.due = now; st.f = (st.f || 0) + 1; if ((s.requeued[c.id] || 0) < 2) { s.requeued[c.id] = (s.requeued[c.id] || 0) + 1; s.queue.splice(Math.min(s.i + 4, s.queue.length), 0, c); } }
   else if (r === 2) { st.box = Math.max(1, st.box); st.due = now + DAY; }
   else { st.box = Math.min(5, st.box + 1); st.due = now + INT[st.box] * DAY; }
   st.n = (st.n || 0) + 1; S.cards[c.id] = st; save();
@@ -326,6 +367,8 @@ function bindCards(){
   $$("[data-mode]").forEach(b => b.addEventListener("click", () => { cardFilter.mode = b.dataset.mode; buildCardQueue(); render(); }));
   $$("[data-cw]").forEach(b => b.addEventListener("click", () => { cardFilter.w = b.dataset.cw === "all" ? "all" : Number(b.dataset.cw); buildCardQueue(); render(); }));
   const sw = $("[data-mode-switch]"); if (sw) sw.addEventListener("click", () => { cardFilter.mode = "alles"; buildCardQueue(); render(); });
+  const cc = $("[data-cclear]"); if (cc) cc.addEventListener("click", () => { cardFilter.k = null; buildCardQueue(); render(); });
+  bindTopicLinks();
   const ag = $("[data-again]"); if (ag) ag.addEventListener("click", () => { buildCardQueue(); render(); });
   const fc = $("#fc"); if (fc) fc.addEventListener("click", flipCard);
   $$("[data-rate]").forEach(b => b.addEventListener("click", () => rateCard(Number(b.dataset.rate))));
@@ -358,12 +401,25 @@ function letterIndex(e, item){ const k = e.key.toUpperCase(); const i = LETTERS.
 // ======================================================================
 // PRACTICE
 // ======================================================================
-let pracFilter = {w:"all", wrong:false};
+let pracFilter = {w:"all", wrong:false, k:null};
 let prac = null;
+const ALL_WEAK = "@zwak";
+function topicKeys(k){ return k === ALL_WEAK ? weakTopics(COURSES[CID], S).map(s => s.t.k) : [k]; }
 function buildPrac(){
-  let pool = weekMc(pracFilter.w);
-  if (pracFilter.wrong) pool = pool.filter(q => S.mc[q.id] && !S.mc[q.id].last);
-  prac = {queue: shuffle(pool).map(prepQuestion), i:0, chosen:null, ok:0, bad:0, streak:0, msg:""};
+  if (pracFilter.k && pracFilter.k !== ALL_WEAK && !TOPIC[pracFilter.k]) pracFilter.k = null;
+  let queue;
+  if (pracFilter.k) {
+    // per onderwerp: eerst de vragen die nu nog fout staan, daarna de rest
+    const ks = topicKeys(pracFilter.k);
+    const pool = MC.filter(q => ks.includes(q.k));
+    const isWrong = q => S.mc[q.id] && !S.mc[q.id].last;
+    queue = shuffle(pool.filter(isWrong)).concat(shuffle(pool.filter(q => !isWrong(q))));
+  } else {
+    let pool = weekMc(pracFilter.w);
+    if (pracFilter.wrong) pool = pool.filter(q => S.mc[q.id] && !S.mc[q.id].last);
+    queue = shuffle(pool);
+  }
+  prac = {queue: queue.map(prepQuestion), i:0, chosen:null, ok:0, bad:0, streak:0, msg:""};
 }
 function viewPractice(){
   if (!prac) buildPrac();
@@ -371,23 +427,29 @@ function viewPractice(){
   const head = `<header class="stack" style="gap:.5rem"><p class="eyebrow">${esc(INFO.short)} · Meerkeuze</p><h1>Oefenvragen</h1>
     <p class="muted">Nieuwe vragen in dezelfde vorm als ${esc(INFO.toets)}: casussen, stellingen en begrippen. Na elk antwoord zie je waarom.</p></header>
     <div class="toolbar">
-      <div class="seg" role="group" aria-label="Selectie"><button data-pw="0" aria-pressed="${!pracFilter.wrong}">Alle vragen</button><button data-pw="1" aria-pressed="${pracFilter.wrong}">Mijn fouten (${wrongN})</button></div>
-      ${weekChips(pracFilter.w, "pwk", WK.filter(w => MC.some(q => q.w === w)))}
+      ${pracFilter.k ? topicPill(pracFilter.k, "data-pclear", "Alle vragen") : `<div class="seg" role="group" aria-label="Selectie"><button data-pw="0" aria-pressed="${!pracFilter.wrong}">Alle vragen</button><button data-pw="1" aria-pressed="${pracFilter.wrong}">Mijn fouten (${wrongN})</button></div>
+      ${weekChips(pracFilter.w, "pwk", WK.filter(w => MC.some(q => q.w === w)))}`}
     </div>`;
-  if (!prac.queue.length) return `<div class="wrap">${head}<div class="empty">${pracFilter.wrong ? "Geen openstaande fouten in deze selectie. Mooi zo!" : "Geen vragen in deze selectie."}</div></div>`;
+  if (!prac.queue.length) return `<div class="wrap">${head}<div class="empty">${pracFilter.k ? "Er zijn geen meerkeuzevragen bij dit onderwerp. Herhaal de kaarten of lees de stof." : pracFilter.wrong ? "Geen openstaande fouten in deze selectie. Mooi zo!" : "Geen vragen in deze selectie."}</div></div>`;
   const item = prac.queue[prac.i];
   if (!item) {
     const tot = prac.ok + prac.bad;
+    const after = pracFilter.k
+      ? `<p class="muted">${prac.bad ? "Wat nog fout ging, zie je terug bij je aandachtspunten. Lees de stof nog even en probeer het dan opnieuw." : "Alles goed. Dit onderwerp schuift nu naar ‘Gaat nu goed’."}</p>
+      <div class="row"><a class="btn btn-primary" href="${L("aandacht")}">Naar je aandachtspunten</a><button class="btn btn-ghost" data-pagain>Nog een keer</button></div>`
+      : `<p class="muted">Vragen die je fout had vind je terug onder ‘Mijn fouten’ en bij je aandachtspunten, met de stof erbij.</p>
+      <div class="row"><button class="btn btn-primary" data-pagain>Opnieuw</button>${wrongN ? `<button class="btn btn-ghost" data-pfout>Oefen mijn fouten</button><a class="btn btn-ghost" href="${L("aandacht")}">Bekijk je aandachtspunten</a>` : ""}</div>`;
     return `<div class="wrap">${head}<div class="panel end"><p class="eyebrow">Klaar</p><p class="big tnum">${prac.ok} van ${tot} goed</p>${tot && prac.ok / tot >= .8 ? `<p class="praise">Sterk, Manouk! Dit gaat echt de goede kant op.</p>` : ""}
-      <p class="muted">Vragen die je fout had vind je terug onder ‘Mijn fouten’.</p>
-      <div class="row"><button class="btn btn-primary" data-pagain>Opnieuw</button>${wrongN ? `<button class="btn btn-ghost" data-pfout>Oefen mijn fouten</button>` : ""}</div></div></div>`;
+      ${after}</div></div>`;
   }
   const reveal = prac.chosen !== null;
   const right = reveal && prac.chosen === item.q.a;
+  const tk = item.q.k && TOPIC[item.q.k];
   return `<div class="wrap">${head}
     <div class="scoreline tnum"><span>Vraag <b>${prac.i + 1}</b> van ${prac.queue.length}</span><span>Goed <b>${prac.ok}</b></span><span>Fout <b>${prac.bad}</b></span>${prac.streak >= 3 ? `<span class="streak">${heart} ${prac.streak} op rij</span>` : ""}</div>
     <div class="panel stack">${questionHTML(item, prac.chosen, reveal)}
-      ${reveal ? `<div class="explain"><span class="verdict ${right ? "good" : "bad"}">${esc(prac.msg)}</span><p>${fmt(item.q.e)}</p></div>
+      ${reveal ? `<div class="explain"><span class="verdict ${right ? "good" : "bad"}">${esc(prac.msg)}</span><p>${fmt(item.q.e)}</p>
+        ${!right && tk ? `<p class="small"><button class="btn-link" data-stof="${esc(tk.k)}">Lees de stof over ${esc(tk.t)}</button></p>` : ""}</div>
       <div class="row"><button class="btn btn-primary" id="pnext">Volgende vraag</button><span class="small muted">of druk op <kbd>Enter</kbd></span></div>`
       : `<p class="small muted">Tip: kies met <kbd>A</kbd> t/m <kbd>${LETTERS[item.order.length - 1]}</kbd></p>`}
     </div></div>`;
@@ -406,6 +468,8 @@ function bindPractice(){
   const n = $("#pnext"); if (n) { n.addEventListener("click", nextPrac); n.focus({preventScroll:true}); }
   const a = $("[data-pagain]"); if (a) a.addEventListener("click", () => { buildPrac(); render(); });
   const f = $("[data-pfout]"); if (f) f.addEventListener("click", () => { pracFilter.wrong = true; buildPrac(); render(); });
+  const pc = $("[data-pclear]"); if (pc) pc.addEventListener("click", () => { pracFilter = {w:"all", wrong:false, k:null}; buildPrac(); render(); });
+  bindTopicLinks();
 }
 function keyPractice(e){
   if (prac && prac.chosen === null) { const item = prac.queue[prac.i]; const i = letterIndex(e, item); if (i >= 0) { e.preventDefault(); choosePrac(item.order[i]); } }
@@ -457,8 +521,9 @@ function viewExam(){
 }
 function examResult(head){
   const r = exam.result, E = INFO.exam;
-  const byW = {};
-  exam.qs.forEach((it, i) => { const w = it.q.w; byW[w] = byW[w] || {ok:0, n:0}; byW[w].n++; if (exam.ans[i] === it.q.a) byW[w].ok++; });
+  const byW = {}, byK = {};
+  exam.qs.forEach((it, i) => { const w = it.q.w; byW[w] = byW[w] || {ok:0, n:0}; byW[w].n++; if (exam.ans[i] === it.q.a) byW[w].ok++; else if (it.q.k && TOPIC[it.q.k]) byK[it.q.k] = (byK[it.q.k] || 0) + 1; });
+  const worst = Object.keys(byK).sort((a, b) => byK[b] - byK[a]).slice(0, 5);
   return `<div class="wrap">${head}
     <div class="panel stack">
       <p class="eyebrow">Uitslag</p>
@@ -466,7 +531,9 @@ function examResult(head){
       ${E.pts && E.pts !== 1 ? `<p class="small muted tnum">${comma(r.score * E.pts)} van de ${comma(r.total * E.pts)} punten${E.guess ? ", raadkans verrekend in de indicatie" : ""}</p>` : ""}
       <p class="${r.frac >= .55 ? "praise" : ""}">${examPraise(r.frac)}</p><p class="muted small">Tijd: ${fmtTime(r.ms)}.</p>
       <div class="weeks">${Object.keys(byW).sort((a,b)=>a-b).map(w => { const b = byW[w], p = Math.round(100 * b.ok / b.n); return `<div class="wk" style="grid-template-columns:4.2rem minmax(0,1fr) 5rem"><span class="nm">${wlabel(w)}</span><span class="bar ${p >= 60 ? "good" : ""}"><i style="width:${p}%"></i></span><span class="small tnum">${b.ok}/${b.n} goed</span></div>`; }).join("")}</div>
-      <div class="row"><button class="btn btn-primary" id="eRestart">Nieuw proeftentamen</button><a class="btn btn-ghost" href="${L("oefenen")}" data-to-fout>Oefen mijn fouten</a></div>
+      ${worst.length ? `<div class="stack" style="gap:.5rem"><p class="small"><b>Hier ging het vaakst mis.</b> Tik op een onderwerp om de stof te lezen.</p>
+        <div class="chips">${worst.map(k => `<button class="chip" data-stof="${esc(k)}">${esc(TOPIC[k].t)} <span class="muted tnum">· ${byK[k]}× fout</span></button>`).join("")}</div></div>` : ""}
+      <div class="row"><button class="btn btn-primary" id="eRestart">Nieuw proeftentamen</button><a class="btn btn-ghost" href="${L("aandacht")}">Naar je aandachtspunten</a><a class="btn btn-ghost" href="${L("oefenen")}" data-to-fout>Oefen mijn fouten</a></div>
     </div>
     <section class="stack"><h2>Alle vragen nalopen</h2><div class="panel" style="padding:.4rem 1.2rem">
       ${exam.qs.map((it, i) => { const ok = exam.ans[i] === it.q.a; const yours = exam.ans[i] === undefined ? "niet beantwoord" : it.q.o[exam.ans[i]]; return `<details class="rev">
@@ -504,7 +571,8 @@ function bindExam(){
   const y = $("#eYes"); if (y) y.addEventListener("click", handIn);
   const no = $("#eNo"); if (no) no.addEventListener("click", () => { examConfirm = false; render(); });
   const r = $("#eRestart"); if (r) r.addEventListener("click", () => { exam = null; render(); });
-  const f = $("[data-to-fout]"); if (f) f.addEventListener("click", () => { pracFilter = {w:"all", wrong:true}; prac = null; });
+  const f = $("[data-to-fout]"); if (f) f.addEventListener("click", () => { pracFilter = {w:"all", wrong:true, k:null}; prac = null; });
+  bindTopicLinks();
 }
 function keyExam(e){
   if (!exam || exam.done) return;
@@ -648,8 +716,9 @@ function naslagBody(){
   const tables = TABLES.filter(t => nas.w === "all" || t.w === nas.w);
   return `<div class="stack">${weekChips(nas.w, "nw", tw)}
     ${tables.map(t => `<section class="stack" style="gap:.6rem"><div class="row"><h2>${esc(t.t)}</h2><span class="tag">${wlabel(t.w)}</span></div>
-      <div class="tbl-wrap"><table class="tbl"><thead><tr>${t.h.map(h => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${t.r.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div></section>`).join("")}</div>`;
+      ${tableHTML(t)}</section>`).join("")}</div>`;
 }
+function tableHTML(t){ return `<div class="tbl-wrap"><table class="tbl"><thead><tr>${t.h.map(h => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${t.r.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`; }
 function bindNaslag(){
   const inp = $("#nasQ");
   if (inp) inp.addEventListener("input", () => { nas.q = inp.value; $("#nasBody").innerHTML = naslagBody(); bindNasChips(); });
@@ -688,24 +757,143 @@ function viewLessons(){
   </div>`;
 }
 function bindLessons(){
-  $$("[data-train]").forEach(b => b.addEventListener("click", () => { pracFilter = {w: Number(b.dataset.train), wrong:false}; prac = null; location.hash = L("oefenen"); }));
-  const x = $("[data-extra]"); if (x) x.addEventListener("click", () => { cardFilter = {w:9, mode:"alles"}; cardSess = null; });
+  $$("[data-train]").forEach(b => b.addEventListener("click", () => { pracFilter = {w: Number(b.dataset.train), wrong:false, k:null}; prac = null; location.hash = L("oefenen"); }));
+  const x = $("[data-extra]"); if (x) x.addEventListener("click", () => { cardFilter = {w:9, mode:"alles", k:null}; cardSess = null; });
+}
+
+// ======================================================================
+// AANDACHTSPUNTEN: onderwerpen die vaak fout gaan, met de stof erbij
+// ======================================================================
+let focusSel = null, focusFrom = null, focusJump = false;
+const FROM = {oefenen:"Terug naar je oefenvragen", tentamen:"Terug naar je uitslag", start:"Terug naar start", kaarten:"Terug naar je kaarten"};
+function openTopic(k, from){
+  if (!TOPIC[k]) return;
+  focusSel = k; focusFrom = from && from !== "aandacht" ? from : null;
+  if (current === "aandacht") { render(); window.scrollTo({top:0}); }
+  else { focusJump = true; location.hash = L("aandacht"); }
+}
+function bindTopicLinks(){
+  $$("[data-stof]").forEach(b => b.addEventListener("click", e => { e.preventDefault(); openTopic(b.dataset.stof, current); }));
+  $$("[data-topic]").forEach(b => b.addEventListener("click", e => { e.preventDefault(); openTopic(b.dataset.topic, current); }));
+  $$("[data-topic-prac]").forEach(b => b.addEventListener("click", () => { pracFilter = {w:"all", wrong:false, k:b.dataset.topicPrac}; prac = null; location.hash = L("oefenen"); }));
+  $$("[data-topic-cards]").forEach(b => b.addEventListener("click", () => { cardFilter = {w:"all", mode:"alles", k:b.dataset.topicCards}; cardSess = null; location.hash = L("kaarten"); }));
+}
+function topicPill(k, clearAttr, clearText){
+  const name = k === ALL_WEAK ? "Al je aandachtspunten" : (TOPIC[k] ? TOPIC[k].t : "");
+  return `<div class="row topic-pill"><span class="chip" aria-pressed="true">${k === ALL_WEAK ? "" : "Onderwerp: "}${esc(name)}</span>
+    ${k !== ALL_WEAK ? `<button class="btn-link small" data-stof="${esc(k)}">Lees de stof</button><span class="muted small" aria-hidden="true">·</span>` : ""}
+    <button class="btn-link small" ${clearAttr}>${esc(clearText)}</button></div>`;
+}
+function topicRow(s, first){
+  const pct = s.tries ? Math.round(100 * s.right / s.tries) : null;
+  return `<button class="trow${first ? " first" : ""}" data-topic="${esc(s.t.k)}">
+    <span class="trow-main">
+      <span class="row" style="gap:.4rem">${first ? `<span class="tag hot">Begin hier</span>` : ""}<span class="tag">${wlabel(s.t.w)}</span></span>
+      <span class="trow-t">${esc(s.t.t)}</span>
+      <span class="small muted tnum">${esc(statLine(s))}</span>
+    </span>
+    <span class="trow-side">${pct === null ? `<span class="small muted">alleen kaarten</span>` : `<span class="bar"><i style="width:${pct}%"></i></span><span class="tnum">${pct}% goed</span>`}
+      <span class="trow-go">Stof lezen ›</span></span>
+  </button>`;
+}
+function viewFocus(){
+  if (focusSel && TOPIC[focusSel]) return viewTopic(TOPIC[focusSel]);
+  const all = allTopicStats(COURSES[CID], S);
+  const weak = all.filter(x => x.status === "zwak").sort((a, b) => b.score - a.score);
+  const better = all.filter(x => x.status === "beter").sort((a, b) => b.wrong - a.wrong);
+  const anyData = all.some(x => x.status !== "nieuw");
+  const weakQ = weak.reduce((a, s) => a + s.qs.length, 0);
+  const head = `<header class="stack" style="gap:.5rem"><p class="eyebrow">${esc(INFO.short)} · Aandachtspunten</p><h1>Wat je nog moet leren</h1>
+    <p class="muted">De onderwerpen waar je de meeste fouten maakt, de lastigste bovenaan. Open een onderwerp, lees de stof uit je samenvatting en oefen daarna meteen de vragen.</p></header>`;
+  let main;
+  if (weak.length) main = `<section class="stack">
+      <div class="row between"><h2>Hier zitten nog fouten</h2><span class="small muted">${plural(weak.length, "onderwerp", "onderwerpen")}</span></div>
+      <div class="tlist">${weak.map((s, i) => topicRow(s, i === 0)).join("")}</div>
+      ${weakQ ? `<div class="row"><button class="btn btn-ghost" data-topic-prac="${ALL_WEAK}">Oefen alle vragen van deze onderwerpen (${weakQ})</button></div>` : ""}
+    </section>`;
+  else if (anyData) main = `<div class="panel end"><p class="eyebrow">Geen open fouten</p><p class="big">Alles staat op goed!</p>
+      <p class="muted">Knap, Manouk. Maak nog een proeftentamen om te checken of het blijft hangen.</p>
+      <div class="row"><a class="btn btn-primary" href="${L("tentamen")}">Doe een proeftentamen</a></div></div>`;
+  else main = `<div class="empty">Er is nog niets om te tonen. Maak eerst een paar oefenvragen of een proeftentamen; daarna zie je hier welke onderwerpen extra aandacht nodig hebben.<br><br>
+      <a class="btn btn-primary" href="${L("oefenen")}">Naar de oefenvragen</a> <a class="btn btn-ghost" href="${L("tentamen")}">Proeftentamen</a></div>`;
+  const groups = WK.map(w => ({w, ts: all.filter(s => s.t.w === w)})).filter(g => g.ts.length);
+  const dotT = {zwak:"nog fouten", beter:"eerder fout, nu goed", goed:"goed", nieuw:"nog niet geoefend"};
+  return `<div class="wrap">${head}${main}
+    ${better.length ? `<section class="stack"><div class="row between"><h2>Gaat nu goed</h2><span class="small muted">eerder fout, nu goed beantwoord</span></div>
+      <div class="chips">${better.map(s => `<button class="chip" data-topic="${esc(s.t.k)}"><span class="sdot beter" aria-hidden="true"></span>${esc(s.t.t)}</button>`).join("")}</div></section>` : ""}
+    <section class="stack"><h2>Alle onderwerpen</h2>
+      <p class="small muted">Ook zonder fouten kun je per onderwerp de stof teruglezen.
+        <span class="legend"><span><span class="sdot zwak"></span>nog fouten</span><span><span class="sdot beter"></span>nu goed</span><span><span class="sdot goed"></span>goed</span><span><span class="sdot"></span>nog niet geoefend</span></span></p>
+      <div class="tgroups">${groups.map(g => `<div class="tgroup"><p class="eyebrow">${g.w === 9 ? "Extra" : "Week " + g.w} · ${esc(WEEKS[g.w].t)}</p>
+        <div class="chips">${g.ts.map(s => `<button class="chip" data-topic="${esc(s.t.k)}" title="${esc(dotT[s.status])}"><span class="sdot ${s.status}" aria-hidden="true"></span>${esc(s.t.t)}</button>`).join("")}</div></div>`).join("")}</div>
+    </section>
+  </div>`;
+}
+function viewTopic(t){
+  const s = topicStats(COURSES[CID], S, t);
+  const wrongQs = s.qs.filter(q => S.mc[q.id] && !S.mc[q.id].last);
+  const notes = [...(LESSONS.corrections || []).filter(x => x.k === t.k).map(x => ({x, fix:true})), ...(LESSONS.weak || []).filter(x => x.k === t.k).map(x => ({x, fix:false}))];
+  const tables = (t.tables || []).map(n => TABLES.find(x => x.t === n)).filter(Boolean);
+  const extraLabel = WEEKS[9] ? WEEKS[9].t : "";
+  const fromLabel = focusFrom && FROM[focusFrom];
+  const pracActive = focusFrom === "oefenen" && prac && prac.queue[prac.i];
+  const actions = (big) => `<div class="row">
+    ${s.qs.length ? `<button class="btn ${big ? "btn-primary" : "btn-ghost"}" data-topic-prac="${esc(t.k)}">Oefen de ${plural(s.qs.length, "vraag", "vragen")} van dit onderwerp</button>` : ""}
+    <button class="btn btn-ghost" data-topic-cards="${esc(t.k)}">Herhaal de ${plural(s.cs.length, "kaart", "kaarten")}</button></div>`;
+  return `<div class="wrap">
+    <div class="row between"><button class="btn-link small" id="fBack">${esc(fromLabel || "Alle aandachtspunten")}</button>${fromLabel ? `<button class="btn-link small" id="fAll">Alle aandachtspunten</button>` : ""}</div>
+    <header class="stack" style="gap:.5rem"><p class="eyebrow">${esc(INFO.short)} · ${t.w === 9 ? "Extra" : "Week " + t.w} · ${esc(WEEKS[t.w] ? WEEKS[t.w].t : "")}</p><h1>${esc(t.t)}</h1>
+      ${s.status === "zwak" || s.status === "beter" ? `<p class="muted tnum">${esc(statLine(s))}${s.status === "beter" ? ". Nu staat alles weer op goed." : ""}</p>` : s.status === "nieuw" ? `<p class="muted">Nog niet geoefend.</p>` : ""}</header>
+
+    ${notes.length ? `<section class="stack" style="gap:.6rem">${notes.map(({x, fix}) => `<div class="callout"><b>${fix ? "Let op, je samenvatting zegt hier iets anders: " : "Valkuil: "}${esc(x.t)}</b><p>${esc(x.d)}</p></div>`).join("")}</section>` : ""}
+
+    ${wrongQs.length ? `<section class="stack" style="gap:.6rem"><h2>Hier ging het mis</h2>
+      <p class="small muted">Weet je het nu wel? Denk eerst na en open dan de vraag voor het juiste antwoord.</p>
+      <div class="panel" style="padding:.4rem 1.2rem">${wrongQs.map(q => `<details class="rev">
+        <summary><span class="dot no" aria-hidden="true">✗</span><span>${esc(q.q)}${q.st ? `<br><span class="small"><b>1:</b> ${esc(q.s1)}<br><b>2:</b> ${esc(q.s2)}</span>` : ""}</span></summary>
+        <div class="body"><p><b class="verdict good">Juist:</b> ${esc(q.o[q.a])}</p><p class="muted">${fmt(q.e)}</p></div></details>`).join("")}</div>
+    </section>` : ""}
+
+    <section class="stack" style="gap:.6rem"><h2>De stof</h2>
+      <p class="small muted">Uit je samenvatting, zoals het ook in je flashcards staat. ${s.hard ? "Kaarten die je lastig vond zijn gemarkeerd." : ""}</p>
+      <div class="panel stof">${s.cs.map(c => { const st = S.cards[c.id]; const hard = st && st.box <= 1;
+        return `<div class="def${hard ? " hard" : ""}">
+          ${hard || c.w === 9 ? `<span class="row" style="gap:.4rem">${hard ? `<span class="tag warn">vond je lastig</span>` : ""}${c.w === 9 ? `<span class="tag">${esc(extraLabel)}</span>` : ""}</span>` : ""}
+          <h3>${fmt(c.q)}</h3><p>${fmt(c.a)}</p></div>`; }).join("")}</div>
+      ${tables.map(tb => `<div class="stack" style="gap:.5rem"><h3>${esc(tb.t)}</h3>${tableHTML(tb)}</div>`).join("")}
+    </section>
+
+    <div class="panel next stack">
+      <p><b>Klaar met lezen?</b> ${s.qs.length ? (wrongQs.length ? "Oefen nu de vragen. Die je fout had komen eerst." : "Oefen nu de vragen om te checken of het erin zit.") : "Bij dit onderwerp zijn geen meerkeuzevragen. Herhaal de kaarten om het vast te zetten."}</p>
+      ${pracActive ? `<div class="row"><a class="btn btn-primary" href="${L("oefenen")}">Verder met je oefenvragen</a>${s.qs.length ? `<button class="btn btn-ghost" data-topic-prac="${esc(t.k)}">Alleen dit onderwerp oefenen</button>` : ""}</div>` : actions(true)}
+    </div>
+  </div>`;
+}
+function bindFocus(){
+  const back = $("#fBack");
+  if (back) back.addEventListener("click", () => {
+    if (focusFrom && FROM[focusFrom]) { const to = focusFrom; focusSel = null; focusFrom = null; location.hash = L(to); }
+    else { focusSel = null; render(); window.scrollTo({top:0}); }
+  });
+  const all = $("#fAll"); if (all) all.addEventListener("click", () => { focusSel = null; focusFrom = null; render(); window.scrollTo({top:0}); });
+  bindTopicLinks();
 }
 
 // ======================================================================
 // VAK WISSELEN
 // ======================================================================
 const SESS = {};
-function stash(){ if (CID) SESS[CID] = {cardFilter, cardSess, pracFilter, prac, exam, examConfirm, openSel, openReveal, openResetAsk, sp, nas}; }
+function stash(){ if (CID) SESS[CID] = {cardFilter, cardSess, pracFilter, prac, exam, examConfirm, openSel, openReveal, openResetAsk, sp, nas, focusSel, focusFrom}; }
 function useCourse(id){
   if (CID === id) return;
   stash(); stopTimer(); clearTimeout(spTimer);
   CID = id; const D = COURSES[id];
-  ({FLASH, MC, OPEN, SPRINT, WEEKS, TABLES, LESSONS, INFO, WK} = D);
+  ({FLASH, MC, OPEN, SPRINT, WEEKS, TABLES, LESSONS, INFO, WK, TOPICS, TOPIC} = D);
   S = loadStore(id);
   const s = SESS[id] || {};
-  cardFilter = s.cardFilter || {w:"all", mode:"herhaal"}; cardSess = s.cardSess || null;
-  pracFilter = s.pracFilter || {w:"all", wrong:false}; prac = s.prac || null;
+  focusSel = s.focusSel || null; focusFrom = s.focusFrom || null;
+  cardFilter = s.cardFilter || {w:"all", mode:"herhaal", k:null}; cardSess = s.cardSess || null;
+  pracFilter = s.pracFilter || {w:"all", wrong:false, k:null}; prac = s.prac || null;
   exam = s.exam || null; examConfirm = !!s.examConfirm;
   openSel = s.openSel || null; openReveal = s.openReveal || {}; openResetAsk = !!s.openResetAsk;
   sp = s.sp && s.sp.picked === null ? s.sp : null; nas = s.nas || {w:"all", q:""};
@@ -718,6 +906,7 @@ function leaveCourse(){ if (!CID) return; stash(); stopTimer(); clearTimeout(spT
 const VIEWS = {
   home:[viewHome, bindHome],
   start:[viewStart, bindStart], kaarten:[viewCards, bindCards, keyCards], oefenen:[viewPractice, bindPractice, keyPractice],
+  aandacht:[viewFocus, bindFocus],
   tentamen:[viewExam, bindExam, keyExam], open:[viewOpen, bindOpen], sprint:[viewSprint, bindSprint, keySprint],
   naslag:[viewNaslag, bindNaslag], leerpunten:[viewLessons, bindLessons]
 };
@@ -739,6 +928,9 @@ function route(){
   const {c, v} = parseHash();
   if (c !== CID || v !== current) { stopTimer(); window.scrollTo({top:0}); }
   if (c) useCourse(c); else leaveCourse();
+  // via het menu naar Aandachtspunten: altijd het overzicht; via een link naar een onderwerp: dat onderwerp
+  if (v === "aandacht" && v !== current && !focusJump) { focusSel = null; focusFrom = null; }
+  focusJump = false;
   current = v; renderNav(v); render();
 }
 document.addEventListener("keydown", e => {
@@ -749,6 +941,8 @@ document.addEventListener("keydown", e => {
 window.addEventListener("hashchange", route);
 function init(){
   const tb = $("#themeBtn"); if (tb) tb.addEventListener("click", cycleTheme);
+  // menu-klik op Aandachtspunten terwijl je een onderwerp leest: terug naar het overzicht
+  $("#nav").addEventListener("click", e => { const a = e.target.closest("a"); if (a && CID && a.getAttribute("href") === L("aandacht") && current === "aandacht" && focusSel) { e.preventDefault(); focusSel = null; focusFrom = null; render(); window.scrollTo({top:0}); } });
   if (THEME) document.documentElement.dataset.ownTheme = "1";
   applyTheme(); route();
 }

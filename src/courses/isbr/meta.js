@@ -140,21 +140,21 @@ tips:[
 {t:"Gebruik de stappenplannen",d:"Bestuursorgaan, besluit, rechtsbescherming en grondrechten hebben allemaal een stappenplan. Dat is meteen de structuur van een goed open antwoord."}
 ],
 weak:[
-{t:"Amsterdams dakterras",d:"Vertrouwen wordt gehonoreerd als er geen zwaarder wegende belangen in de weg staan. Een mondelinge toezegging kan ook, en een toezegging van een ambtenaar kan aan het bevoegde orgaan worden toegerekend.",w:5},
-{t:"Afdeling 7.1 of 7.2 Awb",d:"7.1: eerst bezwaar maken (art. 7:1). 7.2: bijzondere bepalingen over bezwaar, zoals de heroverweging (art. 7:11).",w:7},
-{t:"Delegatie lezen in de Grondwet",d:"‘Behoudens bij of krachtens de wet te stellen beperkingen’ (art. 10 lid 1 Gw) staat delegatie toe. ‘Bij de wet’ niet.",w:3},
-{t:"Is de regering een bestuursorgaan?",d:"Ja: een orgaan van de Staat, een publiekrechtelijke rechtspersoon. Het orgaan zelf hoeft geen rechtspersoonlijkheid te hebben.",w:5},
-{t:"AVV's en beleidsregels",d:"Ook verordeningen van gemeente en provincie zijn AVV's. Beleidsregels zijn géén AVV.",w:3},
-{t:"Functionele decentralisatie",d:"Een beroepsorganisatie zoals de Orde van Advocaten. Provincies en de openbare lichamen Bonaire, Sint Eustatius en Saba zijn territoriaal.",w:5},
-{t:"Burgerlijke rechter",d:"Staat er nog een bestuursrechtelijke rechtsgang open, dan is de eiser bij de burgerlijke rechter niet-ontvankelijk.",w:7},
-{t:"Evenredigheid bij woningsluiting",d:"Bij de evenwichtigheid weegt mee dat een eigenaar verantwoordelijk is voor wat in zijn woning gebeurt. De aanleiding (drugsvondst, arrestatie) is wel relevant.",w:5},
-{t:"Orgaan, niet de handeling",d:"Een commissaris van de Koning die een provinciehuis opent is een a-orgaan. Een rechtbank is uitgezonderd; een waterschap zelf is een rechtspersoon.",w:5},
-{t:"Soort bevoegdheid",d:"Een beslissing in een concreet geval, zoals het niet tekenen van lintjesvoordrachten, is een bestuursbevoegdheid.",w:3},
-{t:"Informele bestuursrechtspraak",d:"Een advocaat is niet verplicht, maar de bestuursrechtspraak regelt er ook niet voor iedereen een.",w:7},
-{t:"Eenheid van regeringsbeleid",d:"Ministers zijn verantwoordelijk voor ministerraadsbesluiten, ook als ze het oneens waren. Een minister spreekt namens het hele kabinet.",w:9}
+{k:"vertrouwen",t:"Amsterdams dakterras",d:"Vertrouwen wordt gehonoreerd als er geen zwaarder wegende belangen in de weg staan. Een mondelinge toezegging kan ook, en een toezegging van een ambtenaar kan aan het bevoegde orgaan worden toegerekend.",w:5},
+{k:"bezwaar",t:"Afdeling 7.1 of 7.2 Awb",d:"7.1: eerst bezwaar maken (art. 7:1). 7.2: bijzondere bepalingen over bezwaar, zoals de heroverweging (art. 7:11).",w:7},
+{k:"bevoegdheden",t:"Delegatie lezen in de Grondwet",d:"‘Behoudens bij of krachtens de wet te stellen beperkingen’ (art. 10 lid 1 Gw) staat delegatie toe. ‘Bij de wet’ niet.",w:3},
+{k:"bestuursorgaan",t:"Is de regering een bestuursorgaan?",d:"Ja: een orgaan van de Staat, een publiekrechtelijke rechtspersoon. Het orgaan zelf hoeft geen rechtspersoonlijkheid te hebben.",w:5},
+{k:"regelgeving",t:"AVV's en beleidsregels",d:"Ook verordeningen van gemeente en provincie zijn AVV's. Beleidsregels zijn géén AVV.",w:3},
+{k:"decentralisatie",t:"Functionele decentralisatie",d:"Een beroepsorganisatie zoals de Orde van Advocaten. Provincies en de openbare lichamen Bonaire, Sint Eustatius en Saba zijn territoriaal.",w:5},
+{k:"rechtsgang",t:"Burgerlijke rechter",d:"Staat er nog een bestuursrechtelijke rechtsgang open, dan is de eiser bij de burgerlijke rechter niet-ontvankelijk.",w:7},
+{k:"evenredigheid",t:"Evenredigheid bij woningsluiting",d:"Bij de evenwichtigheid weegt mee dat een eigenaar verantwoordelijk is voor wat in zijn woning gebeurt. De aanleiding (drugsvondst, arrestatie) is wel relevant.",w:5},
+{k:"bestuursorgaan",t:"Orgaan, niet de handeling",d:"Een commissaris van de Koning die een provinciehuis opent is een a-orgaan. Een rechtbank is uitgezonderd; een waterschap zelf is een rechtspersoon.",w:5},
+{k:"bevoegdheden",t:"Soort bevoegdheid",d:"Een beslissing in een concreet geval, zoals het niet tekenen van lintjesvoordrachten, is een bestuursbevoegdheid.",w:3},
+{k:"rechtsgang",t:"Informele bestuursrechtspraak",d:"Een advocaat is niet verplicht, maar de bestuursrechtspraak regelt er ook niet voor iedereen een.",w:7},
+{k:"parlstelsel",t:"Eenheid van regeringsbeleid",d:"Ministers zijn verantwoordelijk voor ministerraadsbesluiten, ook als ze het oneens waren. Een minister spreekt namens het hele kabinet.",w:9}
 ],
 corrections:[
-{t:"Waterschappen",d:"Je samenvatting noemt waterschappen een mengvorm van territoriale en functionele decentralisatie. Op de toets is een beroepsorganisatie als de Orde van Advocaten het duidelijke voorbeeld van functionele decentralisatie; kies bij twijfel dat."},
+{k:"decentralisatie",t:"Waterschappen",d:"Je samenvatting noemt waterschappen een mengvorm van territoriale en functionele decentralisatie. Op de toets is een beroepsorganisatie als de Orde van Advocaten het duidelijke voorbeeld van functionele decentralisatie; kies bij twijfel dat."},
 {t:"Week 4 ontbreekt",d:"Je samenvatting springt van week 3 naar week 5. Had week 4 wel stof? Kijk dat even na in je studiehandleiding."}
 ],
 missing:[
